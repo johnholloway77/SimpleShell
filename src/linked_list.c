@@ -3,12 +3,20 @@
 //
 
 #include <stdlib.h>
-#include <string.h>
 
 #include "linked_list.h"
 
-Node* createNode(char** path_args) {
-  Node* new_node = (Node*)malloc(sizeof(Node));
+single_string_node* create_single_node(char* string) {
+  single_string_node* new_node =
+      (single_string_node*)malloc(sizeof(single_string_node));
+  new_node->string = string;
+  new_node->next = NULL;
+
+  return new_node;
+}
+
+double_node* create_double_node(char** path_args) {
+  double_node* new_node = (double_node*)malloc(sizeof(double_node));
   new_node->path_args = path_args;
   new_node->next = NULL;
   new_node->previous = NULL;
@@ -16,8 +24,12 @@ Node* createNode(char** path_args) {
   return new_node;
 }
 
+void init_single_string_list(single_linked_list* sll) {
+  sll->head = sll->tail = NULL;
+}
+
 void init_double_linked_list(double_linked_list* dll) {
-  dll->front = dll->rear = NULL;
+  dll->front = dll->tail = NULL;
 }
 
 int isEmpty(double_linked_list* dll) {
@@ -25,13 +37,13 @@ int isEmpty(double_linked_list* dll) {
 }
 
 void insert_end_dll(double_linked_list* dll, char** path_args) {
-  Node* newNode = createNode(path_args);
+  double_node* newNode = create_double_node(path_args);
   if (isEmpty(dll)) {
-    dll->front = dll->rear = newNode;
+    dll->front = dll->tail = newNode;
   } else {
-    dll->rear->next = newNode;
-    dll->rear->previous = dll->rear;
-    dll->rear = newNode;
+    dll->tail->next = newNode;
+    dll->tail->previous = dll->tail;
+    dll->tail = newNode;
   }
 }
 
@@ -39,12 +51,12 @@ char** remove_front_dll(double_linked_list* dll) {
   if (isEmpty(dll)) {
     return NULL;
   } else {
-    Node* temp = dll->front;
+    double_node* temp = dll->front;
     char** path_args = temp->path_args;
 
     dll->front = dll->front->next;
     if (dll->front == NULL) {
-      dll->rear = NULL;
+      dll->tail = NULL;
     } else {
       dll->front->previous = NULL;
     }
@@ -53,10 +65,10 @@ char** remove_front_dll(double_linked_list* dll) {
   }
 }
 
-Node* get_next_node(Node* current) {
+double_node* get_next_node(double_node* current) {
   return current->next;
 }
 
-Node* get_previous_node(Node* current) {
+double_node* get_previous_node(double_node* current) {
   return current->previous;
 }
