@@ -8,14 +8,10 @@
 #include "src/sh_src.h"
 #include "src/term.h"
 
-
-
 int main(int argc, char** argv) {
-
   set_raw();
   atexit(restore);
-  
+
   sh_loop();
   return EXIT_SUCCESS;
 }
-

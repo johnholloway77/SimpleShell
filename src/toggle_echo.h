@@ -5,7 +5,6 @@
 #ifndef SIMPLESHELL_TOGGLE_ECHO_H
 #define SIMPLESHELL_TOGGLE_ECHO_H
 
-
 void toggle_echo(void);
 
-#endif //SIMPLESHELL_TOGGLE_ECHO_H
+#endif  // SIMPLESHELL_TOGGLE_ECHO_H
