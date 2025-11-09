@@ -37,9 +37,9 @@
                                                                               \
     if (iterator && *iterator) {                                              \
       *iterator = (*iterator)->next;                                          \
-      if(!*iterator){ \
-        return END_OF_LIST; \
-      }\
+      if (!*iterator) {                                                       \
+        return END_OF_LIST;                                                   \
+      }                                                                       \
       return 0;                                                               \
     }                                                                         \
     return -1;                                                                \
@@ -59,8 +59,8 @@
                                                                               \
     if (iterator && *iterator) {                                              \
       *iterator = (*iterator)->previous;                                      \
-      if (!*iterator){                                                        \
-      return END_OF_LIST;                                                     \
+      if (!*iterator) {                                                       \
+        return END_OF_LIST;                                                   \
       }                                                                       \
       return 0;                                                               \
     }                                                                         \

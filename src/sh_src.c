@@ -2,12 +2,11 @@
 // Created by jholloway on 10/30/25.
 //
 
-
 #include <string.h>
 
 #include "./sh_src.h"
-#include "strtrim.h"
 #include "single_linked_list.h"
+#include "strtrim.h"
 
 #define UNUSED(x) (void)(x)
 DEFINE_SLIST(line_list, char*)
@@ -25,7 +24,7 @@ static void print_lines(char** p_line, void* x) {
   printf("%s\n", line);
 }
 
-static void free_lines(char **string){
+static void free_lines(char** string) {
   free(*string);
 }
 
@@ -37,10 +36,9 @@ char* line_list_node_get_value(line_list__node* node) {
   return node ? node->value : NULL;
 }
 
-void sh_exit(){
+void sh_exit() {
   line_list_clear(&line_linked_list, free_lines);
 }
-
 
 void sh_print_linked_list() {
   line_list_foreach(&line_linked_list, print_lines, NULL);
@@ -163,7 +161,7 @@ int sh_execute(char** args, char* keep) {
     return 1;
   }
   if (strcmp(args[0], "decrement") == 0) {
-    //line_list_node_decrement(&line_iterator);
+    // line_list_node_decrement(&line_iterator);
     line_list_decrement(&line_iterator, &line_linked_list);
     return 1;
   }

@@ -7,4 +7,4 @@
 
 char* strtrim(char* string);
 
-#endif //SIMPLESHELL_STRTRIM_H
+#endif  // SIMPLESHELL_STRTRIM_H

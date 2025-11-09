@@ -9,7 +9,6 @@
 #include "src/term.h"
 
 int main(int argc, char** argv) {
-
   set_raw();
   atexit(restore);
 
