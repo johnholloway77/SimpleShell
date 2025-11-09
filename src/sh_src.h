@@ -18,9 +18,9 @@
 
 #define SH_TOK_BUFSIZE 64
 #define SH_TOK_DELIM " \t\r\n\a"
+#define END_SH_LOOP 2
 
-
-int sh_execute(char** args);
+int sh_execute(char** args, char* keep);
 int sh_launch(char** args);
 void sh_init_linked_list();
 void sh_loop(void);
