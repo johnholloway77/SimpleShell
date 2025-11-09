@@ -19,8 +19,10 @@
 #define SH_TOK_BUFSIZE 64
 #define SH_TOK_DELIM " \t\r\n\a"
 
+
 int sh_execute(char** args);
 int sh_launch(char** args);
+void sh_init_linked_list();
 void sh_loop(void);
 char* sh_read_line(void);
 char** sh_split_line(char* line);

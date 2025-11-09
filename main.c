@@ -6,7 +6,6 @@
 #define __BSD_VISIBLE 1
 
 #include <stdio.h>
-#include <string.h>
 
 #include "src/sh_src.h"
 #include "src/single_linked_list.h"
@@ -30,25 +29,27 @@ static void print_str(char** s, void *arg) {
 }
 
 int main(int argc, char** argv) {
-  int_list A;
-  int_list_init(&A);
-  int_list_push_front(&A, 1);
-  int_list_push_tail(&A, 2);
-  int_list_push_front(&A, 0);
-  int_list_push_tail(&A, 3);
-  int_list_push_tail(&A, 4);
-  int_list_foreach(&A, print_int, NULL);
-
-  str_list b;
-  str_list_init(&b);
-  str_list_push_tail(&b, strdup("World"));
-  str_list_push_front(&b, strdup("Hello, "));
-  str_list_foreach(&b, print_str, NULL);
-  str_list_clear(&b, free_cstr);
+//  int_list A;
+//  int_list_init(&A);
+//  int_list_push_front(&A, 1);
+//  int_list_push_tail(&A, 2);
+//  int_list_push_front(&A, 0);
+//  int_list_push_tail(&A, 3);
+//  int_list_push_tail(&A, 4);
+//  int_list_foreach(&A, print_int, NULL);
+//  int_list_clear(&A, NULL);
+//
+//  str_list b;
+//  str_list_init(&b);
+//  str_list_push_tail(&b, strdup("World"));
+//  str_list_push_front(&b, strdup("Hello, "));
+//  str_list_foreach(&b, print_str, NULL);
+//  str_list_clear(&b, free_cstr);
 
   set_raw();
   atexit(restore);
 
+  sh_init_linked_list();
   sh_loop();
   return EXIT_SUCCESS;
 }

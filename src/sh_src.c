@@ -2,21 +2,91 @@
 // Created by jholloway on 10/30/25.
 //
 
+#include <ctype.h>
+#include <string.h>
 #include "./sh_src.h"
 
+#include "single_linked_list.h"
+
+#define UNUSED(x) (void)(x)
+DEFINE_SLIST(line_list, char*)
+
+line_list__node *str_ptr;
+line_list list_linked_list;
+
+static void print_lines(char **p_line, void *x){
+  UNUSED(x);
+    char *line = *p_line;
+
+    if(!line) {
+      return;
+    }
+    printf("%s\n", line);
+}
+
+void sh_init_linked_list(){
+  line_list_init(&list_linked_list);
+
+}
+
+void line_list_node_increment(line_list__node **p_node){
+
+  if (!str_ptr){
+    str_ptr = list_linked_list.head;
+  }
+
+  if (p_node && *p_node) {
+    *p_node = (*p_node)->next;
+  }
+}
+
+char *line_list_node_get_value(line_list__node *node){
+  return node ? node->value : NULL;
+}
+
+void sh_print_linked_list(){
+  line_list_foreach(&list_linked_list, print_lines, NULL);
+}
+
+char *strtrim(char *string){
+  if (!string){
+    return string;
+  }
+
+  unsigned char *start = (unsigned char *)string;
+
+  while (*start && isspace(*start)){
+    start++;
+  }
+
+  unsigned char *end = start + strlen((char *)start) -1;
+  while (*end && isspace(*end)){
+    end--;
+  }
+
+  size_t length = (size_t)(end - start + 1);
+  memmove(string, start, length);
+  string[length] = '\0';
+  return string;
+}
+
 void sh_loop(void) {
-  char* line;
-  char** args;
+  char *line;
+  char **args;
   int status;
 
   do {
     printf("JHsh$: ");
     line = sh_read_line();
+    line = strtrim(line);
+    line_list_push_tail(&list_linked_list, strndup(line, strlen(line)));
+
     args = sh_split_line(line);
     status = sh_execute(args);
 
     free(line);
     free(args);  // free's indicate we will return a pointer
+
   } while (status);
 }
 
@@ -59,11 +129,11 @@ char** sh_split_line(char* line) {
       token_backup = tokens;
       tokens = realloc(tokens, bufsize * sizeof(char*));
       if (!tokens) {
-        free(token_backup);
+        free(tokens);
         fprintf(stderr, "jhsh: allocation error\n");
         exit(EXIT_FAILURE);
       }
-      // free(token_backup);
+      free(token_backup);
     }
 
     token = strtok(NULL, SH_TOK_DELIM);
@@ -87,6 +157,21 @@ int sh_execute(char** args) {
   }
   if (strcmp(args[0], "echo") == 0) {
     toggle_echo();
+    return 1;
+  }
+  if (strcmp(args[0], "history") == 0) {
+    sh_print_linked_list();
+    return 1;
+  }
+  if (strcmp(args[0], "test") == 0) {
+    if(!str_ptr){
+      str_ptr = list_linked_list.head;
+    }
+    printf("value: %s\n",line_list_node_get_value(str_ptr));
+    return 1;
+  }
+  if (strcmp(args[0], "increment") == 0) {
+    line_list_node_increment(&str_ptr);
     return 1;
   }
 
