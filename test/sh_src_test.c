@@ -41,8 +41,10 @@ Test(sh_read_line, returns_line) {
 Test(sh_split_line, sh_split_lines_test){
 
     char *line = "the cat in the hat";
-    char *line_allocated = (char *)malloc(strlen(line) +1);
-    strlcpy(line_allocated, line, strlen(line) +1);
+    size_t length = strlen(line) + 1;
+    char *line_allocated = (char *)malloc(length);
+
+    strlcpy(line_allocated, line, length);
 
     char **args;
 
