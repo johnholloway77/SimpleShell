@@ -78,6 +78,7 @@ char* sh_read_line(void) {
   char* line = NULL;
   size_t buffsize = 0;
 
+
   if (getline(&line, &buffsize, stdin) == -1) {
     if (feof((stdin))) {
       fprintf(stderr, "EOF\n");
@@ -117,7 +118,7 @@ char** sh_split_line(char* line) {
         fprintf(stderr, "jhsh: allocation error\n");
         exit(EXIT_FAILURE);
       }
-      free(token_backup);
+     // free(token_backup);
     }
 
     token = strtok(NULL, SH_TOK_DELIM);
