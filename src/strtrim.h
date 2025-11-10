@@ -4,7 +4,7 @@
 
 /**
  * @file strtrim.h
- * @brief This class contains a function to trim whitespace from sa string
+ * @brief This class contains a function to trim whitespace from string
  */
 
 #ifndef SIMPLESHELL_STRTRIM_H
