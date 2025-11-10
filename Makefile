@@ -1,8 +1,16 @@
 UNAME_S != uname -s
+
 BINARY = simpleShell
+TEST_BINARY = test_${BINARY}
+
 SRC_DIR = ./src
+LIBS =
+TEST_DIR = test
+TEST_LIB:= -lgtest
+
 CFLAGS ?= -Wall -Wextra
 DEBUG ?= -g -O0
+
 
 #Compiler
 .if "$(UNAME_S)" == "FreeBSD"
@@ -32,41 +40,25 @@ COVERAGE_RESULTS = results.coverage
 
 # Build process
 OBJECTS = $(SOURCES:.c=.o)
+GTEST_OBJECTS = ${GTEST_DIR:.c=.o}
 
-all: $(BINARY)
-
-$(BINARY): $(OBJECTS)
-	$(CC) -o $@ $(OBJECTS)
+#all: $(BINARY)
 
 #rule to compile source files into object files
 %.o:  %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-.PHONY:  clean
-clean:
-	rm -rf $(BINARY) $(OBJECTS)
+$(BINARY): $(OBJECTS)
+	$(CC) -o $@ $(OBJECTS)
 
-#clean only the object files
-.PHONY: clean-obj
-clean-obj:
-	rm -rf $(OBJECTS)
+$(TEST_BINARY): $(TEST_OBJECTS)
+	$(CC) $(CFLAGS) $(DEBUG)-o $@ $^ -L/usr/local/lib ${GTEST_LIB} ${LIBS}
 
-# clean only docs
-.PHONY: clean-docs
-clean-docs:
-	rm -rf ${DOXY_OUTPUT}
-
-.PHONY: static
-static: check-deps
-	${STATIC_ANALYSIS} --verbose --enable=all --error-exitcode=1 ./main.c ${SRC_DIR}/*.c
-
-.PHONY: style
-style: check-deps
-	${STYLE_CHECK} ./main.c ${SRC_DIR}/*.c
-
-.phony: docs-html
-docs-html: ${DOXYFILE} ${SRC_DIR} main.c check-deps
-	doxygen docs/doxyfile
+################################################################################
+# test targets
+################################################################################
+test: ${TEST_BINARY}
+	./${TEST_BINARY}
 
 check-deps:
 	@set -e; missing=; \
@@ -82,5 +74,40 @@ check-deps:
 	    exit 1; \
 	  else \
 	    printf "All dependencies present\m"; \
+	    return 0 \
 	  fi
 
+
+.PHONY: static
+static: check-deps
+	${STATIC_ANALYSIS} --verbose --enable=all --error-exitcode=1 ./main.c ${SRC_DIR}/*.c
+
+.PHONY: style
+style: check-deps
+	${STYLE_CHECK} ./main.c ${SRC_DIR}/*.c
+
+################################################################################
+# Documentation targets
+################################################################################
+
+.phony: docs-html
+docs-html: ${DOXYFILE} ${SRC_DIR} main.c check-deps
+	doxygen docs/doxyfile
+
+
+################################################################################
+# Clean-up targets
+################################################################################
+.PHONY:  clean
+clean:
+	rm -rf $(BINARY) $(OBJECTS) $(libs)
+
+#clean only the object files
+.PHONY: clean-obj
+clean-obj:
+	rm -rf $(OBJECTS)
+
+# clean only docs
+.PHONY: clean-docs
+clean-docs:
+	rm -rf ${DOXY_OUTPUT}
