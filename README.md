@@ -44,6 +44,17 @@ Flags include:
 - -c command Execute the given command.
 - -x Enable Tracing: Write each command to standard error, preceded by "+"
 
+## Build Documentation
+
+To build the corresponding doxygen html document run the command
+```shell
+make docs-html
+```
+
+The documents can be deleted with
+```shell
+make clean-docs
+```
 ## Memory Management
 
 This program has been carefully developed to handle memory management correctly, ensuring no memory leaks. Valgrind was used extensively to check for and fix any memory issues.

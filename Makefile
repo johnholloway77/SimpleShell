@@ -18,8 +18,8 @@ SOURCES += main.c
 # Tool variables:
 STATIC_ANALYSIS ?= cppcheck
 STYLE_CHECK = cpplint
-DESIGN_DIR = docs/design #not yet setup
-DOXY_DIR = docs/code
+DOXYFILE = docs
+DOXY_OUTPUT = docs/code/html
 COVERAGE_DIR = coverage
 COVERAGE_RESULTS = results.coverage
 
@@ -44,12 +44,17 @@ $(BINARY): $(OBJECTS)
 
 .PHONY:  clean
 clean:
-	${rm} -rf $(BINARY) $(OBJECTS)
+	rm -rf $(BINARY) $(OBJECTS)
 
 #clean only the object files
 .PHONY: clean-obj
 clean-obj:
-	${rm} -rf $(OBJECTS)
+	rm -rf $(OBJECTS)
+
+# clean only docs
+.PHONY: clean-docs
+clean-docs:
+	rm -rf ${DOXY_OUTPUT}
 
 .PHONY: static
 static:
@@ -58,3 +63,7 @@ static:
 .PHONY: style
 style:
 	${STYLE_CHECK} ./main.c ${SRC_DIR}/*.c
+
+.phony: docs-html
+docs-html: ${DOXYFILE} ${SRC_DIR} main.c
+	doxygen docs/doxyfile
