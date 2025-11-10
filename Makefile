@@ -5,12 +5,11 @@ TEST_BINARY = test_${BINARY}
 
 SRC_DIR = ./src
 LIBS =
-TEST_DIR = test
-TEST_LIB:= -lgtest
+LDFLAGS += -L/usr/local/lib -Wl,-rpath,/usr/local/lib
+CPPFLAGS += -I/usr/local/include
 
 CFLAGS ?= -Wall -Wextra
 DEBUG ?= -g -O0
-
 
 #Compiler
 .if "$(UNAME_S)" == "FreeBSD"
@@ -22,6 +21,14 @@ CC = gcc
 # Source files
 SOURCES != ls -1 $(SRC_DIR)/*.c 2>/dev/null || true
 SOURCES += main.c
+OBJECTS = $(SOURCES:.c=.o)
+
+# For tests: compile all src/*.c but NOT main.c, plus all tests
+TEST_DIR = test
+TEST_SOURCES != ls -1 $(TEST_DIR)/*.c 2>/dev/null || true
+TEST_SOURCES += ${SOURCES:Nmain.c}
+TEST_OBJECTS = $(TEST_SOURCES:.c=.o)
+TEST_LIBS = -lcriterion -lpthread $(LIBS)
 
 # Tool variables:
 STATIC_ANALYSIS ?= cppcheck
@@ -38,27 +45,23 @@ COVERAGE_RESULTS = results.coverage
   LCOV = lcov
 .endif
 
-# Build process
-OBJECTS = $(SOURCES:.c=.o)
-GTEST_OBJECTS = ${GTEST_DIR:.c=.o}
-
-#all: $(BINARY)
-
 #rule to compile source files into object files
-%.o:  %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+.SUFFIXES: .c .o
+.c.o:
+	$(CC)  $(CPPFLAGS) -c -o $@ $<
 
 $(BINARY): $(OBJECTS)
 	$(CC) -o $@ $(OBJECTS)
 
 $(TEST_BINARY): $(TEST_OBJECTS)
-	$(CC) $(CFLAGS) $(DEBUG)-o $@ $^ -L/usr/local/lib ${GTEST_LIB} ${LIBS}
+	$(CC) $(DEBUG) -o $@ $(TEST_OBJECTS) $(LDFLAGS) $(TEST_LIBS)
 
 ################################################################################
 # test targets
 ################################################################################
+.PHONY: test
 test: ${TEST_BINARY}
-	./${TEST_BINARY}
+	./${TEST_BINARY}  --verbose=1
 
 check-deps:
 	@set -e; missing=; \
@@ -103,11 +106,15 @@ clean:
 	rm -rf $(BINARY) $(OBJECTS) $(libs)
 
 #clean only the object files
-.PHONY: clean-obj
-clean-obj:
-	rm -rf $(OBJECTS)
+.PHONY: clean-objs
+clean-objs:
+	rm -rf $(OBJECTS) $(TEST_OBJECTS)
 
 # clean only docs
 .PHONY: clean-docs
 clean-docs:
 	rm -rf ${DOXY_OUTPUT}
+
+.PHONY: clean-tests
+clean-tests:
+	rm -rf ${TEST_BINARY} $(TEST_OBJECTS)
