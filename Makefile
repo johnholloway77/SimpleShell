@@ -17,8 +17,8 @@ SOURCES += main.c
 
 # Tool variables:
 STATIC_ANALYSIS ?= cppcheck
-STYLE_CHECK = cpplint
-DOXYFILE = docs
+STYLE_CHECK ?= cpplint
+DOXYFILE = ?docs
 DOXY_OUTPUT = docs/code/html
 COVERAGE_DIR = coverage
 COVERAGE_RESULTS = results.coverage
@@ -57,13 +57,30 @@ clean-docs:
 	rm -rf ${DOXY_OUTPUT}
 
 .PHONY: static
-static:
+static: check-deps
 	${STATIC_ANALYSIS} --verbose --enable=all --error-exitcode=1 ./main.c ${SRC_DIR}/*.c
 
 .PHONY: style
-style:
+style: check-deps
 	${STYLE_CHECK} ./main.c ${SRC_DIR}/*.c
 
 .phony: docs-html
-docs-html: ${DOXYFILE} ${SRC_DIR} main.c
+docs-html: ${DOXYFILE} ${SRC_DIR} main.c check-deps
 	doxygen docs/doxyfile
+
+check-deps:
+	@set -e; missing=; \
+	for t in "${STYLE_CHECK}" "${STATIC_ANALYSIS}" "doxygen"; do \
+	  if ! command -v $$t >/dev/null 2>&1; then \
+	    printf "Missing dependency: %s\n" "$$t"; missing=1; \
+	  else \
+	    printf "Found: %s " "$$t"; ($$t --version 2>/dev/null || $$t -v 2>/dev/null || echo OK) | head -n1; \
+	  fi; \
+	  done; \
+	  if [ -n "$$missing" ]; then \
+	    printf "Error: Missing dependency\n" \
+	    exit 1; \
+	  else \
+	    printf "All dependencies present\m"; \
+	  fi
+
