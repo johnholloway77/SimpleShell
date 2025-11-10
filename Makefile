@@ -73,12 +73,11 @@ check-deps:
 	  fi; \
 	  done; \
 	  if [ -n "$$missing" ]; then \
-	    printf "Error: Missing dependency\n" \
+	    printf "Error: Missing dependency\n"; \
 	    exit 1; \
 	  else \
-	    printf "All dependencies present\m"; \
-	    return 0 \
-	  fi
+	    printf "All dependencies present\n"; \
+	  fi \
 
 
 .PHONY: static
@@ -96,7 +95,6 @@ style: check-deps
 .phony: docs-html
 docs-html: ${DOXYFILE} ${SRC_DIR} main.c check-deps
 	doxygen docs/doxyfile
-
 
 ################################################################################
 # Clean-up targets
