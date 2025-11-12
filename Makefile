@@ -9,6 +9,7 @@ LDFLAGS += -L/usr/local/lib -Wl,-rpath,/usr/local/lib
 CPPFLAGS += -I/usr/local/include
 
 CFLAGS ?= -Wall -Wextra
+CFLAGS += -D__BSD_VISIBLE=1
 DEBUG ?= -g -O0
 
 #Compiler
@@ -59,7 +60,7 @@ COVERAGE_RESULTS = results.coverage
 	${CC} ${CPPFLAGS} ${CFLAGS} ${DEBUG} -c -o $@ $<
 
 ${BINARY}: ${OBJECTS}
-	${CC} ${LDFLAGS} -o $@ ${OBJECTS} ${LIBS}
+	${CC} ${LDFLAGS} ${CFLAGS}  -o $@ ${OBJECTS} ${LIBS}
 
 ${TEST_BINARY}: ${TEST_OBJECTS}
 	${CC} ${DEBUG} ${LDFLAGS} -o $@ ${TEST_OBJECTS} ${TEST_LIBS}
@@ -117,6 +118,8 @@ TEST_LIBS  += -lcriterion -lpthread
 
 .PHONY: coverage
 coverage: clean-exec clean-cov
+
+###############################################3
 	# Build the test runner *with coverage instrumentation* and *without main.c*.
 	${CC} ${CPPFLAGS} ${CFLAGS} ${DEBUG} ${COV_CFLAGS} \
 	      ${INCLUDE} ${LDFLAGS} \
@@ -129,10 +132,17 @@ coverage: clean-exec clean-cov
 	${LLVMPROFDATA} merge -sparse coverage.profraw -o coverage.profdata
 	${LLVMCOV} show ./${TEST_BINARY} \
 	  -instr-profile=coverage.profdata \
-	  -format=html -output-dir=${COVERAGE_DIR} \
-	  -ignore-filename-regex="/usr/local/include/.*"
+      -format=html -output-dir=${COVERAGE_DIR} \
+      -show-branches=count \
+      --show-expansions \
+      -ignore-filename-regex="/usr/local/include/.*" \
+      -ignore-filename-regex="${TEST_DIR}/*.c"
 
 	${MAKE} clean-temp
+################################################3
+
+
+
 
 .PHONY: clean-cov
 clean-cov:

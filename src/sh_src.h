@@ -16,15 +16,11 @@
 
 #include "./toggle_echo.h"
 
-#define SH_TOK_BUFSIZE 64
-#define SH_TOK_DELIM " \t\r\n\a"
 #define END_SH_LOOP 2
 
 int sh_execute(char** args, char* keep);
 int sh_launch(char** args);
 void sh_init_linked_list();
 void sh_loop(void);
-char* sh_read_line(void);
-char** sh_split_line(char* line);
 
 #endif  // SIMPLESHELL_SH_SRC_H
