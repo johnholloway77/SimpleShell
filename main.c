@@ -13,6 +13,10 @@ int main(int argc, char** argv) {
   atexit(restore);
 
   sh_init_linked_list();
+  printf("JHsh$: ");
+
+  fflush(stdout);
   sh_loop();
+
   return EXIT_SUCCESS;
 }
