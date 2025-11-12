@@ -2,14 +2,19 @@
 // Created by jholloway on 10/30/25.
 //
 
+#ifndef __BSD_VISIBLE
+#define __BSD_VISIBLE 1
+#endif
+
 #include <string.h>
 
 #include "./sh_src.h"
-#include "single_linked_list.h"
+#include "macro_linked_list.h"
+#include "sh_lines.h"
 #include "strtrim.h"
+#include "strl.h"
 
 #define UNUSED(x) (void)(x)
-DEFINE_SLIST(line_list, char*)
 
 line_list__node* line_iterator;
 line_list line_linked_list;
@@ -38,6 +43,7 @@ char* line_list_node_get_value(line_list__node* node) {
 
 void sh_exit() {
   line_list_clear(&line_linked_list, free_lines);
+  exit(EXIT_SUCCESS);
 }
 
 void sh_print_linked_list() {
@@ -47,14 +53,16 @@ void sh_print_linked_list() {
 void sh_loop(void) {
   char* line;
   char** args;
-  int status;
 
-  do {
+  while (1) {
     char keep_line = 0;
+    int status;
 
-    printf("JHsh$: ");
     line = sh_read_line();
-    line = strtrim(line);
+    if (!line) {
+      break;
+    }
+    strtrim(line);
     char* line_duplicate = strndup(line, strlen(line));
 
     args = sh_split_line(line);
@@ -69,63 +77,14 @@ void sh_loop(void) {
     free(line);
     free(args);  // free's indicate we will return a pointer
 
-  } while (status != END_SH_LOOP);
-
-  sh_exit();
-}
-
-char* sh_read_line(void) {
-  char* line = NULL;
-  size_t buffsize = 0;
-
-
-  if (getline(&line, &buffsize, stdin) == -1) {
-    if (feof((stdin))) {
-      fprintf(stderr, "EOF\n");
-      exit(EXIT_SUCCESS);
-    } else {
-      fprintf(stderr, "Value of errno: %d\n", errno);
-      exit(EXIT_FAILURE);
-    }
-  }
-  return line;
-}
-
-char** sh_split_line(char* line) {
-  int bufsize = SH_TOK_BUFSIZE;
-  int position = 0;
-  char* save = NULL;
-  char** tokens = malloc(bufsize * sizeof(char*));
-  char** token_backup;
-  char* token;
-
-  if (!tokens) {
-    fprintf(stderr, "jhsh: allocation error\n");
-    exit(EXIT_FAILURE);
-  }
-
-  token = strtok(line, SH_TOK_DELIM);
-  while (token != NULL) {
-    tokens[position] = token;
-    position++;
-
-    if (position >= bufsize) {
-      bufsize += SH_TOK_BUFSIZE;
-      token_backup = tokens;
-      tokens = realloc(tokens, bufsize * sizeof(char*));
-      if (!tokens) {
-        free(tokens);
-        fprintf(stderr, "jhsh: allocation error\n");
-        exit(EXIT_FAILURE);
-      }
-     // free(token_backup);
+    if (status == END_SH_LOOP) {
+      sh_exit();
+      break;
     }
 
-    token = strtok(NULL, SH_TOK_DELIM);
+    printf("JHsh$: ");
+    fflush(stdout);
   }
-  tokens[position] = NULL;
-
-  return tokens;
 }
 
 int sh_execute(char** args, char* keep) {
@@ -134,7 +93,6 @@ int sh_execute(char** args, char* keep) {
   }
 
   if (strcmp(args[0], "exit") == 0) {
-    printf("Exiting shell\n");
     return END_SH_LOOP;
   }
   if (strcmp(args[0], "clear") == 0) {
@@ -196,7 +154,6 @@ int sh_launch(char** args) {
 
     } else {
       execv(args[0], args);
-      ;
     }
   } else {
     waitpid(pid, 0, 0);
