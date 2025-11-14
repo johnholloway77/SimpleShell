@@ -11,7 +11,6 @@
 #include "../src/sh_lines.h"
 #include "../src/strl.h"
 
-
 static char* with_stdin(const char* script, char* (*fn)(void)) {
   int p[2];
   cr_assert_eq(pipe(p), 0);
