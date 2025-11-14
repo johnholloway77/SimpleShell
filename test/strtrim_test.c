@@ -6,8 +6,8 @@
 #include <criterion/criterion.h>
 #include <stdlib.h>
 
-#include "../src/strtrim.h"
 #include "../src/strl.h"
+#include "../src/strtrim.h"
 
 Test(strtrim, trim_test) {
   char* text = "  test   ";
