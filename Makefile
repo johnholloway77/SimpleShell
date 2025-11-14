@@ -38,6 +38,7 @@ TEST_SOURCES != ls -1 $(TEST_DIR)/*.c 2>/dev/null || true
 TEST_SOURCES += ${SOURCES:Nmain.c}
 TEST_OBJECTS = $(TEST_SOURCES:.c=.o)
 TEST_LIBS = -lcriterion -lpthread $(LIBS)
+TEST_MACRO_DEFINE += -D__TESTING=1
 
 # Tool variables:
 STATIC_ANALYSIS ?= cppcheck
@@ -63,7 +64,7 @@ ${BINARY}: ${OBJECTS}
 	${CC} ${LDFLAGS} ${CFLAGS}  -o $@ ${OBJECTS} ${LIBS}
 
 ${TEST_BINARY}: ${TEST_OBJECTS}
-	${CC} ${DEBUG} ${LDFLAGS} -o $@ ${TEST_OBJECTS} ${TEST_LIBS}
+	${CC} ${DEBUG} ${LDFLAGS} -o $@ ${TEST_OBJECTS} ${TEST_LIBS} ${TEST_MACRO_DEFINE}
 
 ################################################################################
 # test targets
