@@ -8,8 +8,8 @@
 #include <string.h>  // strlen
 #include <unistd.h>  // pipe, dup2, write, close
 
-#include "../src/sh_lines.h"
-#include "../src/strl.h"
+#include "../src/sh/sh_lines.h"
+#include "../src/str/strl.h"
 
 static char* with_stdin(const char* script, char* (*fn)(void)) {
   int p[2];

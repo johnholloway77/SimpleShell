@@ -4,13 +4,13 @@
 
 #include <stdint.h>
 
-#include "src/flags.h"
+#include "src/flags/flags.h"
 #define _POSIX_C_SOURCE 200809L
 #define __BSD_VISIBLE 1
 
-#include "src/set_flags.h"
-#include "src/sh_src.h"
-#include "src/term.h"
+#include "src/flags/set_flags.h"
+#include "src/sh/sh_src.h"
+#include "src/term/term.h"
 
 int main(int argc, char** argv) {
   if (argc > 1 && argv[1][0] == '-') {
