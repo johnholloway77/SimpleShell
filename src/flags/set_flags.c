@@ -7,7 +7,7 @@
 
 #include "flags.h"
 
-uint32_t app_flags;
+uint32_t app_flags = 0;
 
 void set_flags(const char* flag_str) {
   int length = strlen(flag_str);
@@ -24,4 +24,8 @@ void set_flags(const char* flag_str) {
         continue;
     }
   }
+}
+
+void reset_flags(void) {
+  app_flags = 0;
 }

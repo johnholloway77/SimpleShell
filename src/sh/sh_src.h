@@ -14,7 +14,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "./toggle_echo.h"
+#include "../term/toggle_echo.h"
 
 #define END_SH_LOOP 2
 

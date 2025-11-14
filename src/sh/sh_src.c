@@ -9,10 +9,10 @@
 #include <string.h>
 
 #include "./sh_src.h"
-#include "macro_linked_list.h"
+#include "../macro_linked_list.h"
 #include "sh_lines.h"
-#include "strl.h"
-#include "strtrim.h"
+#include "../str/strl.h"
+#include "../str/strtrim.h"
 
 #define UNUSED(x) (void)(x)
 
