@@ -152,45 +152,20 @@ clean-temp:
 	rm -rf *.profdata *profraw
 
 .else
+
+# GNU/LINUX build and coverage tests to be built here.
+# got to get all of that damn freebsd stuff out of the two
+
+# writing this on a half laptop-screen is a pain!
+
 .PHONY: coverage
 coverage: clean-exec clean-cov
 # GNU toolchain path (fallback)
 LCOV    ?= lcov
 GCOV    ?= gcov
 
-.PHONY: coverage
-coverage: clean-exec clean-cov
-#
-##############################################################
-#	${CC} ${CPPFLAGS} ${CFLAGS} ${INCLUDE} -L/usr/local/lib \
-#		-o ${TEST_BINARY} ${TEST_DIR}/*.c ${SRC_DIR}/*.c ${LIBS}
-#	./${TEST_BINARY}
-#	${LCOV} --capture --gcov-tool ${GCOV} --directory . \
-#		--output-file ${COVERAGE_RESULTS} --rc lcov_branch_coverage=1
-#	${LCOV} --extract ${COVERAGE_RESULTS} "*/${SRC_DIR}/*" "*/${TEST_DIR}/*" \
-#		-o ${COVERAGE_RESULTS}
-#	genhtml ${COVERAGE_RESULTS} --output-directory ${COVERAGE_DIR}
-##############################################################
-	${CC} ${CPPFLAGS} ${CFLAGS} ${DEBUG} ${COV_CFLAGS} \
-	      ${INCLUDE} ${LDFLAGS} \
-	      -o ${TEST_BINARY} ${TEST_SOURCES} ${TEST_LIBS} ${COV_LDFLAGS}
-
-	# One .profraw per process
-	LLVM_PROFILE_FILE="coverage-%p.profraw" ./${TEST_BINARY}
-
-	# Merge everything
-	${LLVMPROFDATA} merge -sparse coverage-*.profraw -o coverage.profdata
-
-	${LLVMCOV} show ./${TEST_BINARY} \
-	  -instr-profile=coverage.profdata \
-	  -format=html -output-dir=${COVERAGE_DIR} \
-	  -show-branches=count \
-	  --show-expansions \
-	  -ignore-filename-regex="/usr/local/include/.*" \
-	  -ignore-filename-regex="${TEST_DIR}/*.c"
-
-	${MAKE} clean-temp
-	rm -f coverage-*.profraw
+	@echo "Not yet implement for GNU/LINUX"
+	@exit 1
 
 .PHONY: clean-cov
 clean-cov:
