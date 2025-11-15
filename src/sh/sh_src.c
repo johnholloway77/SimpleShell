@@ -8,11 +8,11 @@
 
 #include <string.h>
 
-#include "./sh_src.h"
 #include "../macro_linked_list.h"
-#include "sh_lines.h"
 #include "../str/strl.h"
 #include "../str/strtrim.h"
+#include "./sh_src.h"
+#include "sh_lines.h"
 
 #define UNUSED(x) (void)(x)
 
