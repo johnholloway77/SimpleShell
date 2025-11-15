@@ -213,3 +213,39 @@ Test(link_list_init, for_each_test) {
   line_list_foreach(&line_linked_list, count_strings, NULL);
   cr_expect_eq(count, 0);
 }
+
+Test(line_list_api, increment_null_args) {
+  line_list list;
+  line_list_init(&list);
+
+  line_list__node* it = NULL;
+
+  // l is NULL
+  cr_expect_eq(line_list_increment(&it, NULL), -1);
+
+  // iterator pointer is NULL
+  cr_expect_eq(line_list_increment(NULL, &list), -1);
+}
+
+Test(line_list_api, increment_empty_list) {
+  line_list list;
+  line_list_init(&list);
+
+  line_list__node* it = NULL;
+
+  // empty list, starting from it == NULL → should return -1 or END_OF_LIST
+  cr_expect_eq(line_list_increment(&it, &list),
+               -1);  // whatever your convention is
+}
+
+Test(line_list_api, increment_from_null_uses_head) {
+  line_list list;
+  line_list_init(&list);
+
+  line_list_push_tail(&list, "a");
+  line_list_push_tail(&list, "b");
+
+  line_list__node* it = NULL;
+  cr_expect_eq(line_list_increment(&it, &list), 0);
+  cr_expect_str_eq(line_list_get_value(it), "a");
+}
