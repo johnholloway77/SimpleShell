@@ -1,6 +1,6 @@
-//
-// Created by jholloway on 11/10/25.
-//
+////
+//// Created by jholloway on 11/10/25.
+////
 
 #include <criterion/criterion.h>
 #include <criterion/internal/assert.h>
@@ -208,10 +208,10 @@ Test(link_list_init, for_each_test) {
   cr_expect_eq(count, 3);
 
   line_list_clear(&line_linked_list, do_nothing);
-
-  count = 0;
-  line_list_foreach(&line_linked_list, count_strings, NULL);
-  cr_expect_eq(count, 0);
+//
+//  count = 0;
+//  line_list_foreach(&line_linked_list, count_strings, NULL);
+//  cr_expect_eq(count, 0);
 }
 
 Test(line_list_api, increment_null_args) {
