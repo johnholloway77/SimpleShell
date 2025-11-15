@@ -28,7 +28,8 @@ CC = gcc
 .endif
 
 # Source files
-SOURCES != ls -1 $(SRC_DIR)/*.c 2>/dev/null || true
+#SOURCES != ls -1 -R $(SRC_DIR)/*.c 2>/dev/null || true
+SOURCES != find ${SRC_DIR} -type f -name '*.c' 2>/dev/null || true
 SOURCES += main.c
 OBJECTS = $(SOURCES:.c=.o)
 
@@ -110,8 +111,6 @@ docs-html: ${DOXYFILE} ${SRC_DIR} main.c check-deps
 # To perform the code coverage checks
 .if "${UNAME_S}" == "FreeBSD"
 
-
-
 # Coverage flags (clang/llvm)
 COV_CFLAGS  = -fprofile-instr-generate -fcoverage-mapping
 COV_LDFLAGS = -fprofile-instr-generate
@@ -121,6 +120,8 @@ TEST_LIBS  += -lcriterion -lpthread
 coverage: clean-exec clean-cov
 
 ###############################################3
+
+	rm -f *.profraw *.profdata
 	# Build the test runner *with coverage instrumentation* and *without main.c*.
 	${CC} ${CPPFLAGS} ${CFLAGS} ${DEBUG} ${COV_CFLAGS} \
 	      ${INCLUDE} ${LDFLAGS} \
@@ -142,18 +143,13 @@ coverage: clean-exec clean-cov
 	${MAKE} clean-temp
 ################################################3
 
-
-
-
 .PHONY: clean-cov
 clean-cov:
 	rm -rf *.profdata *profraw ${COVERAGE_RESULTS} ${COVERAGE_DIR}
 
-
 .PHONY: clean-temp
 clean-temp:
 	rm -rf *.profdata *profraw
-
 
 .else
 .PHONY: coverage
@@ -192,8 +188,6 @@ clean-temp:
 	*.gcov *.gcda *.gcno
 
 .endif
-
-
 
 ################################################################################
 # Clean-up targets
