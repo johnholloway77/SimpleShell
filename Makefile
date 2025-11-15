@@ -1,3 +1,4 @@
+SHELL = /bin/sh
 UNAME_S != uname -s
 
 BINARY = simpleShell
@@ -19,16 +20,14 @@ LLVM_BIN        ?= /usr/local/llvm19/bin
 CLANG           ?= ${LLVM_BIN}/clang
 LLVMPROFDATA    ?= ${LLVM_BIN}/llvm-profdata
 LLVMCOV         ?= ${LLVM_BIN}/llvm-cov
-
-# Use the pinned clang as your C compiler
 CC = ${CLANG}
+
 
 .else
 CC = gcc
 .endif
 
 # Source files
-#SOURCES != ls -1 -R $(SRC_DIR)/*.c 2>/dev/null || true
 SOURCES != find ${SRC_DIR} -type f -name '*.c' 2>/dev/null || true
 SOURCES += main.c
 OBJECTS = $(SOURCES:.c=.o)
@@ -38,7 +37,7 @@ TEST_DIR = test
 TEST_SOURCES != ls -1 $(TEST_DIR)/*.c 2>/dev/null || true
 TEST_SOURCES += ${SOURCES:Nmain.c}
 TEST_OBJECTS = $(TEST_SOURCES:.c=.o)
-TEST_LIBS = -lcriterion -lpthread $(LIBS)
+TEST_LIBS = -lcriterion -lpthread
 TEST_MACRO_DEFINE += -D__TESTING=1
 
 # Tool variables:
@@ -112,7 +111,7 @@ docs-html: ${DOXYFILE} ${SRC_DIR} main.c check-deps
 .if "${UNAME_S}" == "FreeBSD"
 
 # Coverage flags (clang/llvm)
-COV_CFLAGS  = -fprofile-instr-generate -fcoverage-mapping
+COV_CFLAGS  = -fprofile-instr-generate -fcoverage-mapping -mllvm -enable-name-compression=false
 COV_LDFLAGS = -fprofile-instr-generate
 TEST_LIBS  += -lcriterion -lpthread
 
@@ -121,27 +120,28 @@ coverage: clean-exec clean-cov
 
 ###############################################3
 
-	rm -f *.profraw *.profdata
 	# Build the test runner *with coverage instrumentation* and *without main.c*.
 	${CC} ${CPPFLAGS} ${CFLAGS} ${DEBUG} ${COV_CFLAGS} \
-	      ${INCLUDE} ${LDFLAGS} \
-	      -o ${TEST_BINARY} ${TEST_SOURCES} ${TEST_LIBS} ${COV_LDFLAGS}
+    	      ${INCLUDE} ${LDFLAGS} \
+    	      -o ${TEST_BINARY} ${TEST_SOURCES} ${TEST_LIBS} ${COV_LDFLAGS}
 
-	# Run to produce .profraw
-	LLVM_PROFILE_FILE=coverage.profraw ./${TEST_BINARY}
+    	# One .profraw per process (Criterion forks)
+	LLVM_PROFILE_FILE="coverage-%p.profraw" ./${TEST_BINARY}
 
-	# Merge & render HTML
-	${LLVMPROFDATA} merge -sparse coverage.profraw -o coverage.profdata
+    	# Merge all per-process profiles
+	${LLVMPROFDATA} merge -sparse coverage-*.profraw -o coverage.profdata
+
+    	# Render HTML
 	${LLVMCOV} show ./${TEST_BINARY} \
-	  -instr-profile=coverage.profdata \
-      -format=html -output-dir=${COVERAGE_DIR} \
-      -show-branches=count \
-      --show-expansions \
-      -ignore-filename-regex="/usr/local/include/.*" \
-      -ignore-filename-regex="${TEST_DIR}/*.c"
+    	  -instr-profile=coverage.profdata \
+          -format=html -output-dir=${COVERAGE_DIR} \
+          -show-branches=count \
+          --show-expansions \
+          -ignore-filename-regex="/usr/local/include/.*" \
+          -ignore-filename-regex="${TEST_DIR}/*.c"
 
 	${MAKE} clean-temp
-################################################3
+		rm -f coverage-*.profraw
 
 .PHONY: clean-cov
 clean-cov:
@@ -160,14 +160,37 @@ GCOV    ?= gcov
 
 .PHONY: coverage
 coverage: clean-exec clean-cov
-	${CC} ${CPPFLAGS} ${CFLAGS} ${INCLUDE} -L/usr/local/lib \
-		-o ${TEST_BINARY} ${TEST_DIR}/*.c ${SRC_DIR}/*.c ${LIBS}
-	./${TEST_BINARY}
-	${LCOV} --capture --gcov-tool ${GCOV} --directory . \
-		--output-file ${COVERAGE_RESULTS} --rc lcov_branch_coverage=1
-	${LCOV} --extract ${COVERAGE_RESULTS} "*/${SRC_DIR}/*" "*/${TEST_DIR}/*" \
-		-o ${COVERAGE_RESULTS}
-	genhtml ${COVERAGE_RESULTS} --output-directory ${COVERAGE_DIR}
+#
+##############################################################
+#	${CC} ${CPPFLAGS} ${CFLAGS} ${INCLUDE} -L/usr/local/lib \
+#		-o ${TEST_BINARY} ${TEST_DIR}/*.c ${SRC_DIR}/*.c ${LIBS}
+#	./${TEST_BINARY}
+#	${LCOV} --capture --gcov-tool ${GCOV} --directory . \
+#		--output-file ${COVERAGE_RESULTS} --rc lcov_branch_coverage=1
+#	${LCOV} --extract ${COVERAGE_RESULTS} "*/${SRC_DIR}/*" "*/${TEST_DIR}/*" \
+#		-o ${COVERAGE_RESULTS}
+#	genhtml ${COVERAGE_RESULTS} --output-directory ${COVERAGE_DIR}
+##############################################################
+	${CC} ${CPPFLAGS} ${CFLAGS} ${DEBUG} ${COV_CFLAGS} \
+	      ${INCLUDE} ${LDFLAGS} \
+	      -o ${TEST_BINARY} ${TEST_SOURCES} ${TEST_LIBS} ${COV_LDFLAGS}
+
+	# One .profraw per process
+	LLVM_PROFILE_FILE="coverage-%p.profraw" ./${TEST_BINARY}
+
+	# Merge everything
+	${LLVMPROFDATA} merge -sparse coverage-*.profraw -o coverage.profdata
+
+	${LLVMCOV} show ./${TEST_BINARY} \
+	  -instr-profile=coverage.profdata \
+	  -format=html -output-dir=${COVERAGE_DIR} \
+	  -show-branches=count \
+	  --show-expansions \
+	  -ignore-filename-regex="/usr/local/include/.*" \
+	  -ignore-filename-regex="${TEST_DIR}/*.c"
+
+	${MAKE} clean-temp
+	rm -f coverage-*.profraw
 
 .PHONY: clean-cov
 clean-cov:
