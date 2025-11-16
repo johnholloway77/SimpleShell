@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "../src/sh/sh_src.h"
+#include "../src/str/strl.h"
 
 static char* read_all_fd(int fd) {
   size_t cap = 8192, len = 0;
