@@ -144,8 +144,13 @@ int sh_execute(char** args, char* keep) {
     }
 
     if (argc < 2) {
-      fprintf(stderr, "Provide an argument for cd command...asshole...\n");
-      fflush(stderr);
+      char* home = getenv("HOME");
+
+      if (chdir(home) == -1) {
+        fprintf(stderr, "Unable to chdir tp %s: %s\n", home, strerror(errno));
+        fflush(stderr);
+      }
+
       return CONT_SH_LOOP;
     }
 
