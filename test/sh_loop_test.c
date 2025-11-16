@@ -6,6 +6,7 @@
 #include <criterion/criterion.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/param.h>
 #include <unistd.h>
 
 #include "../src/sh/sh_src.h"
@@ -50,7 +51,13 @@ Test(sh_loop, keep_test) {
   close(in_pipe[1]);  // <-- important
 
   // Run shell
-  char** mock_envp = NULL;
+  char** mock_envp = malloc(64 * sizeof(char *));
+  memset(mock_envp, 0, 64 * sizeof(char *));
+
+  mock_envp[0] = (char *)malloc(MAXPATHLEN);
+  char* mock_env = "SHELL=/bin/bsh";
+  strlcpy(mock_envp[0], mock_env, MAXPATHLEN);
+
   sh_loop(mock_envp);
 
   // Restore std fds so our process no longer holds the pipe write-end
@@ -70,4 +77,5 @@ Test(sh_loop, keep_test) {
   cr_expect_not_null(output);
   cr_expect_str_eq(output, expected);
   free(output);
+  free(mock_envp[0]);
 }
