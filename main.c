@@ -17,21 +17,7 @@
 
 char* cwd = NULL;
 
-void println(char** envp) {
-  for (int i = 0; envp[i]; i++) {
-    printf("%d: %s\n", i, envp[i]);
-  }
-}
-
 int main(int argc, char** argv, char** envp) {
-  // println(envp);
-
-  //  char* value;
-  //
-  //  if ((value = getenv("USER"))) {
-  //    printf("Value: %s\n", value);
-  //  }
-
   if (argc > 1 && argv[1][0] == '-') {
     set_flags(argv[1]);
   }
