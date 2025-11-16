@@ -50,7 +50,8 @@ Test(sh_loop, keep_test) {
   close(in_pipe[1]);  // <-- important
 
   // Run shell
-  sh_loop();
+  char** mock_envp = NULL;
+  sh_loop(mock_envp);
 
   // Restore std fds so our process no longer holds the pipe write-end
   cr_assert(dup2(saved_stdin, STDIN_FILENO) >= 0);
