@@ -109,7 +109,7 @@ char** update_args(char** args, char** envp) {
       }
     }
 
-    //free(line);
+    // free(line);
     i++;
   }
 

@@ -21,7 +21,6 @@
 
 #define UNUSED(x) (void)(x)
 
-
 line_list__node* line_iterator;
 line_list line_linked_list;
 
@@ -49,7 +48,6 @@ char* line_list_node_get_value(line_list__node* node) {
 
 void sh_exit() {
   line_list_clear(&line_linked_list, free_lines);
-
 
   exit(EXIT_SUCCESS);
 }
@@ -91,7 +89,7 @@ void sh_loop(char** envp) {
     free(args);  // free's indicate we will return a pointer
 
     int i = 0;
-    while (updated_args[i]){
+    while (updated_args[i]) {
       free(updated_args[i]);
       i++;
     }
@@ -128,8 +126,8 @@ int sh_execute(char** args, char* keep) {
     sh_print_linked_list();
     return CONT_SH_LOOP;
   }
-  if (strcmp(args[0], "pwd") == 0){
-    char *cwd = getcwd(NULL, 0);
+  if (strcmp(args[0], "pwd") == 0) {
+    char* cwd = getcwd(NULL, 0);
     printf("%s\n", cwd);
     free(cwd);
     return CONT_SH_LOOP;
