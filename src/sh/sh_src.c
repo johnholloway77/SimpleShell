@@ -107,6 +107,12 @@ void sh_loop(char** envp) {
 }
 
 int sh_execute(char** args, char* keep) {
+
+  uint8_t argc = 0;
+  while(args[argc]){
+    argc++;
+  }
+
   if (args[0] == NULL) {
     return CONT_SH_LOOP;
   }
@@ -130,6 +136,24 @@ int sh_execute(char** args, char* keep) {
     char* cwd = getcwd(NULL, 0);
     printf("%s\n", cwd);
     free(cwd);
+    return CONT_SH_LOOP;
+  }
+  if (strcmp(args[0], "cd") == 0) {
+    if (argc > 2){
+      fprintf(stderr, "Too many arguments for cd command...asshole...\n");
+      return CONT_SH_LOOP;
+    }
+
+    if (argc < 2) {
+      fprintf(stderr, "Provide an argument for cd command...asshole...\n");
+      fflush(stderr);
+      return CONT_SH_LOOP;
+    }
+
+    if (chdir(args[1]) == -1) {
+      fprintf(stderr, "Unable to chdir tp %s: %s\n", args[1], strerror(errno));
+      fflush(stderr);
+    }
     return CONT_SH_LOOP;
   }
 
