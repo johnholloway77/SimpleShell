@@ -2,22 +2,71 @@
 // Created by jholloway on 10/30/25.
 //
 
-#include <stdint.h>
 
-#include "src/flags/flags.h"
 #define _POSIX_C_SOURCE 200809L
 #define __BSD_VISIBLE 1
 
+
+#include <stdlib.h>
+#include <sys/param.h>
+#include <unistd.h>
+
+#include "src/flags/flags.h"
 #include "src/flags/set_flags.h"
 #include "src/sh/sh_src.h"
 #include "src/term/term.h"
+#include "src/str/strl.h"
 
-int main(int argc, char** argv) {
+char *cwd = NULL;
+
+void println(char** envp) {
+  for (int i = 0; envp[i]; i++) {
+    printf("%d: %s\n", i, envp[i]);
+  }
+}
+
+int main(int argc, char** argv, char** envp) {
+  // println(envp);
+
+//  char* value;
+//
+//  if ((value = getenv("USER"))) {
+//    printf("Value: %s\n", value);
+//  }
+
   if (argc > 1 && argv[1][0] == '-') {
     set_flags(argv[1]);
   }
 
   if (!(app_flags & C_FLAG)) {
+
+    cwd = getcwd(NULL, 0);
+    if (!cwd) {
+      perror("getcwd");
+      exit(EXIT_FAILURE);
+    }
+
+    char *app_name = (char *)malloc(MAXPATHLEN);
+    memset(app_name, 0, MAXPATHLEN);
+
+    char *argv0 = argv[0];
+    char *slash = strrchr(argv0,'/');
+    if (slash) {
+      argv0 = slash + 1;
+    }
+
+    printf("slash: %s\n", argv0);
+
+    strlcat(app_name, cwd, MAXPATHLEN);
+
+    if (setenv("SHELL", app_name, 1) == 0) {
+      char *s = getenv("SHELL");
+      printf("shell %s\n", s);
+    }
+
+    free(cwd);
+    free(app_name);
+
     set_raw();
     atexit(restore);
 
@@ -25,7 +74,7 @@ int main(int argc, char** argv) {
     printf("JHsh$: ");
 
     fflush(stdout);
-    sh_loop();
+    sh_loop(envp);
   } else {
     if (argc > 2) {
       sh_launch(&argv[2]);
