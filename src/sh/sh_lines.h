@@ -11,4 +11,6 @@
 char* sh_read_line(void);
 char** sh_split_line(char* line);
 
+char** update_args(char** args, char** envp);
+
 #endif  // SIMPLESHELL_SH_LINES_H

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../str/strl.h"
 #include "sh_lines.h"
 
 char* sh_read_line(void) {
@@ -56,6 +57,61 @@ char** sh_split_line(char* line) {
     token = strtok(NULL, SH_TOK_DELIM);
   }
   tokens[position] = NULL;
+
+  return tokens;
+}
+
+char** update_args(char** args, char** envp) {
+  if (!args || !envp) {
+    return NULL;
+  }
+
+  int bufsize = SH_TOK_BUFSIZE;
+
+  char** tokens = malloc(bufsize * sizeof(char*));
+
+  for (size_t i = 0; i < bufsize; i++) {
+    tokens[i] = NULL;
+  }
+
+  if (!tokens) {
+    fprintf(stderr, "jhsh: allocation error\n");
+    exit(EXIT_FAILURE);
+  }
+
+  int i = 0;
+  while (args[i]) {
+    char* line = (char*)malloc(SH_TOK_BUFSIZE);
+    memset(line, 0, SH_TOK_BUFSIZE);
+
+    char* value = getenv(args[i] + 1);
+
+    if (args[i][0] == '$') {
+      if (value) {
+        ;
+        strlcpy(line, value, SH_TOK_BUFSIZE);
+
+        tokens[i] = line;
+      }
+
+    } else {
+      strlcpy(line, args[i], SH_TOK_BUFSIZE);
+      tokens[i] = line;
+    }
+
+    if (i >= bufsize) {
+      bufsize += SH_TOK_BUFSIZE;
+      tokens = realloc(tokens, bufsize * sizeof(char*));
+      if (!tokens) {
+        free(tokens);
+        fprintf(stderr, "jhsh: allocation error\n");
+        exit(EXIT_FAILURE);
+      }
+    }
+
+    //free(line);
+    i++;
+  }
 
   return tokens;
 }
