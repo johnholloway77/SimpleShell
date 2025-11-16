@@ -107,9 +107,8 @@ void sh_loop(char** envp) {
 }
 
 int sh_execute(char** args, char* keep) {
-
   uint8_t argc = 0;
-  while(args[argc]){
+  while (args[argc]) {
     argc++;
   }
 
@@ -139,7 +138,7 @@ int sh_execute(char** args, char* keep) {
     return CONT_SH_LOOP;
   }
   if (strcmp(args[0], "cd") == 0) {
-    if (argc > 2){
+    if (argc > 2) {
       fprintf(stderr, "Too many arguments for cd command...asshole...\n");
       return CONT_SH_LOOP;
     }
