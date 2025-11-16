@@ -16,11 +16,12 @@
 
 #include "../term/toggle_echo.h"
 
-#define END_SH_LOOP 2
+#define CONT_SH_LOOP 1
+#define END_SH_LOOP 0
 
 int sh_execute(char** args, char* keep);
 int sh_launch(char** args);
 void sh_init_linked_list();
-void sh_loop(void);
+void sh_loop(char** envp);
 
 #endif  // SIMPLESHELL_SH_SRC_H

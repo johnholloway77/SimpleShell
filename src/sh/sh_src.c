@@ -2,12 +2,17 @@
 // Created by jholloway on 10/30/25.
 //
 
+#include <termios.h>
+#include <unistd.h>
 #ifndef __BSD_VISIBLE
 #define __BSD_VISIBLE 1
 #endif
 
 #include <string.h>
+#include <sys/param.h>
 
+#include "../flags/flags.h"
+#include "../flags/set_flags.h"
 #include "../macro_linked_list.h"
 #include "../str/strl.h"
 #include "../str/strtrim.h"
@@ -15,6 +20,7 @@
 #include "sh_lines.h"
 
 #define UNUSED(x) (void)(x)
+
 
 line_list__node* line_iterator;
 line_list line_linked_list;
@@ -43,6 +49,8 @@ char* line_list_node_get_value(line_list__node* node) {
 
 void sh_exit() {
   line_list_clear(&line_linked_list, free_lines);
+
+
   exit(EXIT_SUCCESS);
 }
 
@@ -50,9 +58,10 @@ void sh_print_linked_list() {
   line_list_foreach(&line_linked_list, print_lines, NULL);
 }
 
-void sh_loop(void) {
+void sh_loop(char** envp) {
   char* line;
   char** args;
+  char** updated_args;
 
   while (1) {
     char keep_line = 0;
@@ -66,7 +75,11 @@ void sh_loop(void) {
     char* line_duplicate = strndup(line, strlen(line));
 
     args = sh_split_line(line);
-    status = sh_execute(args, &keep_line);
+
+    updated_args = update_args(args, envp);
+
+    // status = sh_execute(args, &keep_line);
+    status = sh_execute(updated_args, &keep_line);
 
     if (keep_line) {
       line_list_push_tail(&line_linked_list, line_duplicate);
@@ -76,6 +89,14 @@ void sh_loop(void) {
 
     free(line);
     free(args);  // free's indicate we will return a pointer
+
+    int i = 0;
+    while (updated_args[i]){
+      free(updated_args[i]);
+      i++;
+    }
+
+    free(updated_args);
 
     if (status == END_SH_LOOP) {
       sh_exit();
@@ -89,7 +110,7 @@ void sh_loop(void) {
 
 int sh_execute(char** args, char* keep) {
   if (args[0] == NULL) {
-    return 1;
+    return CONT_SH_LOOP;
   }
 
   if (strcmp(args[0], "exit") == 0) {
@@ -97,32 +118,21 @@ int sh_execute(char** args, char* keep) {
   }
   if (strcmp(args[0], "clear") == 0) {
     printf("\x1b[2J\x1b[1H");
-    return 1;
+    return CONT_SH_LOOP;
   }
   if (strcmp(args[0], "toggle_echo") == 0) {
     toggle_echo();
-    return 1;
+    return CONT_SH_LOOP;
   }
   if (strcmp(args[0], "history") == 0) {
     sh_print_linked_list();
-    return 1;
+    return CONT_SH_LOOP;
   }
-  if (strcmp(args[0], "test") == 0) {
-    if (!line_iterator) {
-      line_iterator = line_linked_list.head;
-    }
-    printf("value: %s\n", line_list_node_get_value(line_iterator));
-    return 1;
-  }
-  if (strcmp(args[0], "increment") == 0) {
-    // line_list_node_increment(&line_iterator);
-    line_list_increment(&line_iterator, &line_linked_list);
-    return 1;
-  }
-  if (strcmp(args[0], "decrement") == 0) {
-    // line_list_node_decrement(&line_iterator);
-    line_list_decrement(&line_iterator, &line_linked_list);
-    return 1;
+  if (strcmp(args[0], "pwd") == 0){
+    char *cwd = getcwd(NULL, 0);
+    printf("%s\n", cwd);
+    free(cwd);
+    return CONT_SH_LOOP;
   }
 
   // for IO redirect we need to recognize "<" and ">" characters.
@@ -147,6 +157,10 @@ int sh_launch(char** args) {
       memset(full_path, 0, size);
       strlcpy(full_path, temp_path, size);
       strlcat(full_path, args[0], size);
+
+      if (app_flags & X_FLAG) {
+        printf("- %s\n", args[0]);
+      }
 
       (void)execv(full_path, args);
 
