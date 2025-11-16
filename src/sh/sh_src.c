@@ -2,6 +2,8 @@
 // Created by jholloway on 10/30/25.
 //
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
 #ifndef __BSD_VISIBLE
@@ -74,7 +76,11 @@ void sh_loop(char** envp) {
 
     args = sh_split_line(line);
 
-    updated_args = update_args(args, envp);
+    if ( (updated_args = update_args(args, envp)) == NULL ) {
+      free(line);
+      free(args);
+      continue;
+    }
 
     // status = sh_execute(args, &keep_line);
     status = sh_execute(updated_args, &keep_line);
@@ -206,7 +212,12 @@ int sh_launch(char** args) {
         }
     }
   } else {
-    waitpid(pid, 0, 0);
+   int return_val;
+   waitpid(pid, &return_val, 0);
+
+   char buff[32];
+   snprintf(buff, 32, "%d", WEXITSTATUS(return_val));
+    setenv("?", buff, 1);
   }
   return 1;
 }
