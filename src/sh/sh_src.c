@@ -177,6 +177,9 @@ int sh_launch(char** args) {
   }
 
   if (pid == 0) {
+
+    int evecv_ret_val = 0;
+
     if (args[0][0] != '/') {
       size_t size = strlen(temp_path) + strlen(args[0]) + 1;
       full_path = malloc(size);
@@ -188,12 +191,19 @@ int sh_launch(char** args) {
         printf("- %s\n", args[0]);
       }
 
-      (void)execv(full_path, args);
+
+       if ( (evecv_ret_val = execv(full_path, args)) == -1) {
+           fprintf(stderr, "Error: Unknown command: %s : %s\n", args[0], strerror(errno));
+           exit(EXIT_FAILURE);
+        }
 
       free(full_path);
 
     } else {
-      execv(args[0], args);
+        if ( (evecv_ret_val = execv(full_path, args)) == -1) {
+            fprintf(stderr, "Error: Unknown command: %s : %s\n", args[0], strerror(errno));
+            exit(EXIT_FAILURE);
+        }
     }
   } else {
     waitpid(pid, 0, 0);
