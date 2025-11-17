@@ -9,6 +9,7 @@
 
 #include "../str/strl.h"
 #include "sh_lines.h"
+#include "sh_src.h"
 
 char* sh_read_line(void) {
   char* line = NULL;
@@ -63,6 +64,48 @@ char** sh_split_line(char* line) {
   tokens[position] = NULL;
 
   return tokens;
+}
+
+Path_struct* sh_parse_path_line(char* path_line) {
+  if (!path_line) {
+    return NULL;
+  }
+
+  Path_struct* ps = (Path_struct*)malloc(sizeof(Path_struct));
+
+  int bufsize = SH_TOK_BUFSIZE;
+  int position = 0;
+  // char* save = NULL;
+  ps->path_options = malloc(bufsize * sizeof(char*));
+  char** token_backup = NULL;
+  char* token;
+
+  if (!ps->path_options) {
+    fprintf(stderr, "jhsh: allocation error\n");
+    exit(EXIT_FAILURE);
+  }
+
+  token = strtok(path_line, ":");
+  while (token != NULL) {
+    ps->path_options[position] = token;
+    position++;
+
+    if (position >= bufsize) {
+      bufsize += SH_TOK_BUFSIZE;
+      ps->path_options = realloc(ps->path_options, bufsize * sizeof(char*));
+      if (!ps->path_options) {
+        free(ps->path_options);
+        fprintf(stderr, "jhsh: allocation error\n");
+        exit(EXIT_FAILURE);
+      }
+    }
+
+    token = strtok(NULL, ":");
+  }
+  ps->path_options[position] = NULL;
+  ps->count = position;
+
+  return ps;
 }
 
 char** update_args(char** args, char** envp) {
