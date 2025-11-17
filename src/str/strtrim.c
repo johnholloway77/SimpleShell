@@ -3,8 +3,8 @@
 //
 #include <ctype.h>
 #include <stddef.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 char* strtrim(char* string) {
   if (!string) {
@@ -25,9 +25,9 @@ char* strtrim(char* string) {
   // Error check
   ptrdiff_t difference = end - start + 1;
 
-  if (difference <= 0){
-    char *out = (char *)malloc(1);
-    if(out) {
+  if (difference <= 0) {
+    char* out = (char*)malloc(1);
+    if (out) {
       out[0] = '\0';
     }
     return out;

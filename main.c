@@ -13,9 +13,9 @@
 #include "src/flags/flags.h"
 #include "src/flags/set_flags.h"
 #include "src/sh/sh_src.h"
+#include "src/sig/sig_handlers.h"
 #include "src/str/strl.h"
 #include "src/term/term.h"
-#include "src/sig/sig_handlers.h"
 
 char* cwd = NULL;
 
@@ -24,8 +24,8 @@ int main(int argc, char** argv, char** envp) {
     set_flags(argv[1]);
   }
 
-  if (1 == init_handlers() ){
-      return -1;
+  if (1 == init_handlers()) {
+    return -1;
   }
 
   if (!(app_flags & C_FLAG)) {
@@ -44,8 +44,6 @@ int main(int argc, char** argv, char** envp) {
       argv0 = slash + 1;
     }
 
-
-
     strlcat(app_name, cwd, MAXPATHLEN);
 
     setenv("SHELL", app_name, 1);
@@ -53,13 +51,13 @@ int main(int argc, char** argv, char** envp) {
     char buff[32];
     snprintf(buff, sizeof(buff), "%d", getpid());
 
-    setenv("$",buff, 1);
+    setenv("$", buff, 1);
 
     free(cwd);
     free(app_name);
 
-   // set_raw();
-   // atexit(restore);
+    // set_raw();
+    // atexit(restore);
 
     sh_init_linked_list();
     printf("JHsh$: ");

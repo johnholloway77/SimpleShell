@@ -52,10 +52,10 @@ Test(sh_loop, keep_test) {
   close(in_pipe[1]);  // <-- important
 
   // Run shell
-  char** mock_envp = malloc(64 * sizeof(char *));
-  memset(mock_envp, 0, 64 * sizeof(char *));
+  char** mock_envp = malloc(64 * sizeof(char*));
+  memset(mock_envp, 0, 64 * sizeof(char*));
 
-  mock_envp[0] = (char *)malloc(MAXPATHLEN);
+  mock_envp[0] = (char*)malloc(MAXPATHLEN);
   char* mock_env = "SHELL=/bin/bsh";
   strlcpy(mock_envp[0], mock_env, MAXPATHLEN);
 

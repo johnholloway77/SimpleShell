@@ -7,4 +7,4 @@
 
 int init_handlers(void);
 
-#endif //SIMPLESHELL_SIG_HANDLERS_H
+#endif  // SIMPLESHELL_SIG_HANDLERS_H
