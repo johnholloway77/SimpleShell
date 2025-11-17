@@ -1,17 +1,17 @@
 //
 // Created by jholloway on 10/30/25.
 //
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <termios.h>
-#include <unistd.h>
 #ifndef __BSD_VISIBLE
 #define __BSD_VISIBLE 1
 #endif
 
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
+#include <termios.h>
+#include <unistd.h>
 
 #include "../flags/flags.h"
 #include "../flags/set_flags.h"
@@ -22,6 +22,8 @@
 #include "sh_lines.h"
 
 #define UNUSED(x) (void)(x)
+#define TRUE 1
+#define FALSE 0
 
 line_list__node* line_iterator;
 line_list line_linked_list;
@@ -54,6 +56,22 @@ void sh_exit() {
   exit(EXIT_SUCCESS);
 }
 
+static int saved_stdin;
+static int saved_stdout;
+static int saved_stderr;
+
+void sh_backup_fd(void) {
+  saved_stdin = dup(STDIN_FILENO);
+  saved_stdout = dup(STDOUT_FILENO);
+  saved_stderr = dup(STDERR_FILENO);
+}
+
+void sh_restore_fd(void) {
+  dup2(saved_stdin, STDIN_FILENO);
+  dup2(saved_stdout, STDOUT_FILENO);
+  dup2(saved_stderr, STDERR_FILENO);
+}
+
 void sh_print_linked_list() {
   line_list_foreach(&line_linked_list, print_lines, NULL);
 }
@@ -76,7 +94,7 @@ void sh_loop(char** envp) {
 
     args = sh_split_line(line);
 
-    if ( (updated_args = update_args(args, envp)) == NULL ) {
+    if ((updated_args = update_args(args, envp)) == NULL) {
       free(line);
       free(args);
       continue;
@@ -113,9 +131,13 @@ void sh_loop(char** envp) {
 }
 
 int sh_execute(char** args, char* keep) {
-  uint8_t argc = 0;
-  while (args[argc]) {
-    argc++;
+  uint8_t argsc = 0;
+  while (args[argsc]) {
+    argsc++;
+  }
+
+  if (app_flags & X_FLAG) {
+    printf("- %s\n", args[0]);
   }
 
   if (args[0] == NULL) {
@@ -144,12 +166,12 @@ int sh_execute(char** args, char* keep) {
     return CONT_SH_LOOP;
   }
   if (strcmp(args[0], "cd") == 0) {
-    if (argc > 2) {
+    if (argsc > 2) {
       fprintf(stderr, "Too many arguments for cd command...asshole...\n");
       return CONT_SH_LOOP;
     }
 
-    if (argc < 2) {
+    if (argsc < 2) {
       char* home = getenv("HOME");
 
       if (chdir(home) == -1) {
@@ -167,8 +189,141 @@ int sh_execute(char** args, char* keep) {
     return CONT_SH_LOOP;
   }
 
-  // for IO redirect we need to recognize "<" and ">" characters.
   *keep = 1;
+  // for IO redirect we need to recognize "<" and ">" characters.
+
+  // args_end will tell us where the last of the command arguments are.
+
+  char** cmd_args = NULL;
+  int cmd_argsc = 0;
+  int args_end = 0;
+
+  int fd_in;
+  int fd_out;
+
+  int redir_out = FALSE;
+  int redir_in = FALSE;
+
+  sh_backup_fd();
+
+  // parse the section that will be run
+  for (int i = 0; i < argsc; i++) {
+    if (((strcmp(args[i], ">") == 0) || (strcmp(args[i], ">>") == 0) ||
+         (strcmp(args[i], "<") == 0))) {
+      args_end = i - 1;
+
+      cmd_args = malloc((i + 1) * sizeof(char*));
+
+      for (int j = 0; j <= args_end; j++) {
+        cmd_args[j] = args[j];
+      }
+      cmd_args[i] = NULL;
+      break;
+    }
+    cmd_argsc++;
+  }
+
+  for (int i = argsc - 1; i >= 0; i--) {
+    if (strcmp(args[i], "<") == 0) {
+      if (i == 0 || !args[i + 1]) {
+        fprintf(stderr, "invalid redirect. Missing input or output for <\n");
+        sh_restore_fd();
+        free(cmd_args);
+        return -1;
+      }
+
+      redir_in = TRUE;
+
+      if (args[i + 1]) {
+        close(fd_in);
+        if ((fd_in = open(args[i + 1], O_RDONLY | O_NONBLOCK)) < 0) {
+          sh_restore_fd();
+          free(cmd_args);
+          fprintf(stderr, "Could not open file: %s\nerror: %s\n", args[i + 1],
+                  strerror(errno));
+          return -1;
+        }
+
+      } else {
+        fprintf(stderr, "Invalid redirection. Need source.");
+      }
+    }
+  }
+
+  // redirect output to file
+  // goes left to right with rightmost redirect being the dominant one.
+  for (int i = 0; i < argsc; i++) {
+    if (strcmp(args[i], ">") == 0) {
+      if (!args[i - 1] || !args[i + 1]) {
+        fprintf(stderr,
+                "invalid redirect. Missing input or output for > redirect\n");
+        sh_restore_fd();
+        free(cmd_args);
+        return -1;
+      }
+
+      redir_out = TRUE;
+
+      if (args[i + 1]) {
+        if ((fd_out = open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0666)) ==
+            -1) {
+          sh_restore_fd();
+          free(cmd_args);
+          fprintf(stderr, "could not open file %s\n", args[i + 1]);
+          return -1;
+        }
+      }
+    }
+
+    if (strcmp(args[i], ">>") == 0) {
+      if (!args[i - 1] || !args[i + 1]) {
+        fprintf(stderr,
+                "invalid redirect. Missing input or output for >> redirect\n");
+        sh_restore_fd();
+        free(cmd_args);
+        return -1;
+      }
+
+      redir_out = TRUE;
+
+      if (args[i + 1]) {
+        if ((fd_out = open(args[i + 1], O_WRONLY | O_CREAT | O_APPEND, 0666)) ==
+            -1) {
+          sh_restore_fd();
+          free(cmd_args);
+          fprintf(stderr, "could not open file %s\n", args[i + 1]);
+          return -1;
+        }
+      }
+    }
+  }
+
+  if (redir_out == TRUE) {
+    dup2(fd_out, STDOUT_FILENO);
+  }
+
+  if (redir_in == TRUE) {
+    dup2(fd_in, STDIN_FILENO);
+  }
+
+  if (redir_in || redir_out) {
+    int ret_val = sh_launch(cmd_args);
+
+    close(fd_out);
+    close(fd_in);
+    sh_restore_fd();
+
+    if (cmd_args) {
+      free(cmd_args);
+    }
+
+    return ret_val;
+  }
+
+  if (cmd_args) {
+    free(cmd_args);
+  }
+
   return sh_launch(args);
 }
 
@@ -183,7 +338,6 @@ int sh_launch(char** args) {
   }
 
   if (pid == 0) {
-
     int evecv_ret_val = 0;
 
     if (args[0][0] != '/') {
@@ -193,30 +347,27 @@ int sh_launch(char** args) {
       strlcpy(full_path, temp_path, size);
       strlcat(full_path, args[0], size);
 
-      if (app_flags & X_FLAG) {
-        printf("- %s\n", args[0]);
+      if ((evecv_ret_val = execv(full_path, args)) == -1) {
+        fprintf(stderr, "Error: Unknown command: %s : %s\n", args[0],
+                strerror(errno));
+        exit(EXIT_FAILURE);
       }
-
-
-       if ( (evecv_ret_val = execv(full_path, args)) == -1) {
-           fprintf(stderr, "Error: Unknown command: %s : %s\n", args[0], strerror(errno));
-           exit(EXIT_FAILURE);
-        }
 
       free(full_path);
 
     } else {
-        if ( (evecv_ret_val = execv(full_path, args)) == -1) {
-            fprintf(stderr, "Error: Unknown command: %s : %s\n", args[0], strerror(errno));
-            exit(EXIT_FAILURE);
-        }
+      if ((evecv_ret_val = execv(full_path, args)) == -1) {
+        fprintf(stderr, "Error: Unknown command: %s : %s\n", args[0],
+                strerror(errno));
+        exit(EXIT_FAILURE);
+      }
     }
   } else {
-   int return_val;
-   waitpid(pid, &return_val, 0);
+    int return_val;
+    waitpid(pid, &return_val, 0);
 
-   char buff[32];
-   snprintf(buff, 32, "%d", WEXITSTATUS(return_val));
+    char buff[32];
+    snprintf(buff, 32, "%d", WEXITSTATUS(return_val));
     setenv("?", buff, 1);
   }
   return 1;
