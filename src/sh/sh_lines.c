@@ -27,7 +27,6 @@ char* sh_read_line(void) {
 }
 
 char** sh_split_line(char* line) {
-
   if (!line) {
     return NULL;
   }
@@ -38,8 +37,6 @@ char** sh_split_line(char* line) {
   char** tokens = malloc(bufsize * sizeof(char*));
   char** token_backup = NULL;
   char* token;
-
-
 
   if (!tokens) {
     fprintf(stderr, "jhsh: allocation error\n");
