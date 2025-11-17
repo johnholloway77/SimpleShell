@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "../term/toggle_echo.h"
+#include "./sh_lines.h"
 
 #define CONT_SH_LOOP 1
 #define END_SH_LOOP 0
