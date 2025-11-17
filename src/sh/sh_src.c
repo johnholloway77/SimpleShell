@@ -56,20 +56,55 @@ void sh_exit() {
   exit(EXIT_SUCCESS);
 }
 
-static int saved_stdin;
-static int saved_stdout;
-static int saved_stderr;
+typedef struct redirect_str {
+  int saved_stdin;
+  int saved_stdout;
+  int saved_stderr;
+  int fd_in;
+  int fd_out;
+  int fd_err;
+  int redir_out;
+  int redir_in;
+  int redir_err;
+} Redirect_str;
 
-void sh_backup_fd(void) {
-  saved_stdin = dup(STDIN_FILENO);
-  saved_stdout = dup(STDOUT_FILENO);
-  saved_stderr = dup(STDERR_FILENO);
+void sh_redirect_init(Redirect_str* redir) {
+  redir->redir_out = FALSE;
+  redir->redir_in = FALSE;
+  redir->redir_err = FALSE;
+  redir->saved_stdin = dup(STDIN_FILENO);
+  redir->saved_stdout = dup(STDOUT_FILENO);
+  redir->saved_stderr = dup(STDERR_FILENO);
+  redir->fd_out = -1;
+  redir->fd_in = -1;
+  redir->fd_err = -1;
 }
 
-void sh_restore_fd(void) {
-  dup2(saved_stdin, STDIN_FILENO);
-  dup2(saved_stdout, STDOUT_FILENO);
-  dup2(saved_stderr, STDERR_FILENO);
+void sh_restore_fd(Redirect_str* redir) {
+  if (redir->redir_in == TRUE) {
+    dup2(redir->saved_stdin, STDIN_FILENO);
+  }
+
+  if (redir->redir_out) {
+    dup2(redir->saved_stdout, STDOUT_FILENO);
+  }
+  if (redir->redir_err) {
+    dup2(redir->saved_stderr, STDERR_FILENO);
+  }
+}
+
+void sh_close_fd(Redirect_str* redir) {
+  if (redir->fd_in != -1) {
+    close(redir->fd_in);
+  }
+
+  if (redir->fd_out != -1) {
+    close(redir->fd_out);
+  }
+
+  if (redir->fd_err != -1) {
+    close(redir->fd_err);
+  }
 }
 
 void sh_print_linked_list() {
@@ -198,13 +233,9 @@ int sh_execute(char** args, char* keep) {
   int cmd_argsc = 0;
   int args_end = 0;
 
-  int fd_in;
-  int fd_out;
+  Redirect_str redirectStr;
 
-  int redir_out = FALSE;
-  int redir_in = FALSE;
-
-  sh_backup_fd();
+  sh_redirect_init(&redirectStr);
 
   // parse the section that will be run
   for (int i = 0; i < argsc; i++) {
@@ -227,17 +258,21 @@ int sh_execute(char** args, char* keep) {
     if (strcmp(args[i], "<") == 0) {
       if (i == 0 || !args[i + 1]) {
         fprintf(stderr, "invalid redirect. Missing input or output for <\n");
-        sh_restore_fd();
+        sh_restore_fd(&redirectStr);
         free(cmd_args);
         return -1;
       }
 
-      redir_in = TRUE;
+      redirectStr.redir_in = TRUE;
 
       if (args[i + 1]) {
-        close(fd_in);
-        if ((fd_in = open(args[i + 1], O_RDONLY | O_NONBLOCK)) < 0) {
-          sh_restore_fd();
+        if (redirectStr.fd_in != -1) {
+          close(redirectStr.fd_in);
+        }
+
+        if ((redirectStr.fd_in = open(args[i + 1], O_RDONLY | O_NONBLOCK)) <
+            0) {
+          sh_restore_fd(&redirectStr);
           free(cmd_args);
           fprintf(stderr, "Could not open file: %s\nerror: %s\n", args[i + 1],
                   strerror(errno));
@@ -254,20 +289,24 @@ int sh_execute(char** args, char* keep) {
   // goes left to right with rightmost redirect being the dominant one.
   for (int i = 0; i < argsc; i++) {
     if (strcmp(args[i], ">") == 0) {
-      if (!args[i - 1] || !args[i + 1]) {
+      if (i == 0 || !args[i + 1]) {
         fprintf(stderr,
                 "invalid redirect. Missing input or output for > redirect\n");
-        sh_restore_fd();
+        sh_restore_fd(&redirectStr);
         free(cmd_args);
         return -1;
       }
 
-      redir_out = TRUE;
-
       if (args[i + 1]) {
-        if ((fd_out = open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0666)) ==
-            -1) {
-          sh_restore_fd();
+        redirectStr.redir_out = TRUE;
+
+        if (redirectStr.fd_out != -1) {
+          close(redirectStr.fd_out);
+        }
+
+        if ((redirectStr.fd_out =
+                 open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0666)) == -1) {
+          sh_restore_fd(&redirectStr);
           free(cmd_args);
           fprintf(stderr, "could not open file %s\n", args[i + 1]);
           return -1;
@@ -276,20 +315,23 @@ int sh_execute(char** args, char* keep) {
     }
 
     if (strcmp(args[i], ">>") == 0) {
-      if (!args[i - 1] || !args[i + 1]) {
+      if (i == 0 || !args[i + 1]) {
         fprintf(stderr,
                 "invalid redirect. Missing input or output for >> redirect\n");
-        sh_restore_fd();
+        sh_restore_fd(&redirectStr);
         free(cmd_args);
         return -1;
       }
 
-      redir_out = TRUE;
-
       if (args[i + 1]) {
-        if ((fd_out = open(args[i + 1], O_WRONLY | O_CREAT | O_APPEND, 0666)) ==
-            -1) {
-          sh_restore_fd();
+        redirectStr.redir_out = TRUE;
+        if (redirectStr.fd_out != -1) {
+          close(redirectStr.fd_out);
+        }
+
+        if ((redirectStr.fd_out = open(
+                 args[i + 1], O_WRONLY | O_CREAT | O_APPEND, 0666)) == -1) {
+          sh_restore_fd(&redirectStr);
           free(cmd_args);
           fprintf(stderr, "could not open file %s\n", args[i + 1]);
           return -1;
@@ -298,20 +340,19 @@ int sh_execute(char** args, char* keep) {
     }
   }
 
-  if (redir_out == TRUE) {
-    dup2(fd_out, STDOUT_FILENO);
+  if (redirectStr.redir_out == TRUE) {
+    dup2(redirectStr.fd_out, STDOUT_FILENO);
   }
 
-  if (redir_in == TRUE) {
-    dup2(fd_in, STDIN_FILENO);
+  if (redirectStr.redir_in == TRUE) {
+    dup2(redirectStr.fd_in, STDIN_FILENO);
   }
 
-  if (redir_in || redir_out) {
+  if (redirectStr.redir_in || redirectStr.redir_out) {
     int ret_val = sh_launch(cmd_args);
 
-    close(fd_out);
-    close(fd_in);
-    sh_restore_fd();
+    sh_close_fd(&redirectStr);
+    sh_restore_fd(&redirectStr);
 
     if (cmd_args) {
       free(cmd_args);
