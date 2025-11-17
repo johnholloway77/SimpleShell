@@ -25,8 +25,10 @@
 #define TRUE 1
 #define FALSE 0
 
-line_list__node* line_iterator;
-line_list line_linked_list;
+static line_list__node* line_iterator;
+static line_list line_linked_list;
+
+Path_struct* ps;
 
 static void print_lines(char** p_line, void* x) {
   UNUSED(x);
@@ -115,6 +117,10 @@ void sh_loop(char** envp) {
   char* line;
   char** args;
   char** updated_args;
+
+  char* paths = getenv("PATH");
+  // printf("path: %s\n", paths);
+  ps = sh_parse_path_line(paths);
 
   while (1) {
     char keep_line = 0;
@@ -369,8 +375,8 @@ int sh_execute(char** args, char* keep) {
 }
 
 int sh_launch(char** args) {
-  char* temp_path = "/bin/";
-  char* full_path = NULL;
+  char buff[MAXPATHLEN];
+  memset(buff, 0, MAXPATHLEN);
 
   pid_t pid = fork();
   if (pid < 0) {
@@ -379,37 +385,32 @@ int sh_launch(char** args) {
   }
 
   if (pid == 0) {
-    int evecv_ret_val = 0;
-
     if (args[0][0] != '/') {
-      size_t size = strlen(temp_path) + strlen(args[0]) + 1;
-      full_path = malloc(size);
-      memset(full_path, 0, size);
-      strlcpy(full_path, temp_path, size);
-      strlcat(full_path, args[0], size);
+      snprintf(buff, MAXPATHLEN, "./%s", args[0]);
+      execv(buff, args);
 
-      if ((evecv_ret_val = execv(full_path, args)) == -1) {
-        fprintf(stderr, "Error: Unknown command: %s : %s\n", args[0],
-                strerror(errno));
-        exit(EXIT_FAILURE);
+      for (int i = 0; i < ps->count; i++) {
+        snprintf(buff, MAXPATHLEN, "%s/%s", ps->path_options[i], args[0]);
+
+        execv(buff, args);
       }
 
-      free(full_path);
-
+      fprintf(stderr, "Error:%s : %s\n", args[0], strerror(errno));
+      _exit(EXIT_FAILURE);
     } else {
-      if ((evecv_ret_val = execv(full_path, args)) == -1) {
+      if ((execv(args[0], args)) == -1) {
         fprintf(stderr, "Error: Unknown command: %s : %s\n", args[0],
                 strerror(errno));
-        exit(EXIT_FAILURE);
+        _exit(EXIT_FAILURE);
       }
     }
   } else {
     int return_val;
     waitpid(pid, &return_val, 0);
 
-    char buff[32];
-    snprintf(buff, 32, "%d", WEXITSTATUS(return_val));
-    setenv("?", buff, 1);
+    char return_buff[32];
+    snprintf(return_buff, 32, "%d", WEXITSTATUS(return_val));
+    setenv("?", return_buff, 1);
   }
   return 1;
 }
