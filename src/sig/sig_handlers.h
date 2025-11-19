@@ -6,5 +6,6 @@
 #define SIMPLESHELL_SIG_HANDLERS_H
 
 int init_handlers(void);
+int reset_handlers(void);
 
 #endif  // SIMPLESHELL_SIG_HANDLERS_H
