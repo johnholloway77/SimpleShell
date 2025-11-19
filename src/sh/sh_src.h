@@ -21,7 +21,7 @@
 #define END_SH_LOOP 0
 
 int sh_execute(char** args, char* keep);
-int sh_launch(char** args);
+int sh_launch(char** args, int async);
 void sh_init_linked_list();
 void sh_loop(char** envp);
 

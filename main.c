@@ -66,7 +66,7 @@ int main(int argc, char** argv, char** envp) {
     sh_loop(envp);
   } else {
     if (argc > 2) {
-      sh_launch(&argv[2]);
+      sh_launch(&argv[2], 0);
     }
   }
 

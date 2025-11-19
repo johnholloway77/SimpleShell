@@ -1,6 +1,7 @@
 //
 // Created by jholloway on 10/30/25.
 //
+#include <signal.h>
 #ifndef __BSD_VISIBLE
 #define __BSD_VISIBLE 1
 #endif
@@ -16,7 +17,7 @@
 #include "../flags/flags.h"
 #include "../flags/set_flags.h"
 #include "../macro_linked_list.h"
-#include "../str/strl.h"
+#include "../sig/sig_handlers.h"
 #include "../str/strtrim.h"
 #include "./sh_src.h"
 #include "sh_lines.h"
@@ -37,7 +38,7 @@ static void print_lines(char** p_line, void* x) {
   if (!line) {
     return;
   }
-  printf("%s\n", line);
+  printf("\t%s\n", line);
 }
 
 static void free_lines(char** string) {
@@ -173,6 +174,8 @@ void sh_loop(char** envp) {
 
 int sh_execute(char** args, char* keep) {
   uint8_t argsc = 0;
+  int async = FALSE;
+
   while (args[argsc]) {
     argsc++;
   }
@@ -239,6 +242,14 @@ int sh_execute(char** args, char* keep) {
   int cmd_argsc = 0;
   int args_end = 0;
 
+  int last_position = strlen(args[argsc - 1]) - 1;
+  char* last_char = &args[argsc - 1][last_position];
+
+  if (*last_char == '&') {
+    *last_char = '\0';
+    async = TRUE;
+  }
+
   Redirect_str redirectStr;
 
   sh_redirect_init(&redirectStr);
@@ -262,8 +273,8 @@ int sh_execute(char** args, char* keep) {
 
   for (int i = argsc - 1; i >= 0; i--) {
     if (strcmp(args[i], "<") == 0) {
-      if (i == 0 || !args[i + 1]) {
-        fprintf(stderr, "invalid redirect. Missing input or output for <\n");
+      if (!args[i + 1]) {
+        fprintf(stderr, "invalid redirect. Missing input for <\n");
         sh_restore_fd(&redirectStr);
         free(cmd_args);
         return -1;
@@ -355,7 +366,7 @@ int sh_execute(char** args, char* keep) {
   }
 
   if (redirectStr.redir_in || redirectStr.redir_out) {
-    int ret_val = sh_launch(cmd_args);
+    int ret_val = sh_launch(cmd_args, async);
 
     sh_close_fd(&redirectStr);
     sh_restore_fd(&redirectStr);
@@ -371,10 +382,10 @@ int sh_execute(char** args, char* keep) {
     free(cmd_args);
   }
 
-  return sh_launch(args);
+  return sh_launch(args, async);
 }
 
-int sh_launch(char** args) {
+int sh_launch(char** args, int async) {
   char buff[MAXPATHLEN];
   memset(buff, 0, MAXPATHLEN);
 
@@ -385,19 +396,26 @@ int sh_launch(char** args) {
   }
 
   if (pid == 0) {
+    if (reset_handlers() == -1) {
+      (void)fprintf(stderr, "Error resetting signal handlers for child\n");
+    }
+
     if (args[0][0] != '/') {
       snprintf(buff, MAXPATHLEN, "./%s", args[0]);
+
+      fflush(stdout);
       execv(buff, args);
 
       for (int i = 0; i < ps->count; i++) {
         snprintf(buff, MAXPATHLEN, "%s/%s", ps->path_options[i], args[0]);
-
+        fflush(stdout);
         execv(buff, args);
       }
 
       fprintf(stderr, "Error:%s : %s\n", args[0], strerror(errno));
       _exit(EXIT_FAILURE);
     } else {
+      fflush(stdout);
       if ((execv(args[0], args)) == -1) {
         fprintf(stderr, "Error: Unknown command: %s : %s\n", args[0],
                 strerror(errno));
@@ -405,12 +423,14 @@ int sh_launch(char** args) {
       }
     }
   } else {
-    int return_val;
-    waitpid(pid, &return_val, 0);
+    if (!async) {
+      int return_val = -1;
+      waitpid(pid, &return_val, 0);
 
-    char return_buff[32];
-    snprintf(return_buff, 32, "%d", WEXITSTATUS(return_val));
-    setenv("?", return_buff, 1);
+      char return_buff[32];
+      snprintf(return_buff, 32, "%d", WEXITSTATUS(return_val));
+      setenv("?", return_buff, 1);
+    }
   }
   return 1;
 }
