@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "../flags/flags.h"
@@ -430,7 +429,6 @@ int sh_launch(char** args, int async) {
     } else {
       int return_val = -1;
       waitpid(pid, &return_val, 0);
-
       char return_buff[32];
       snprintf(return_buff, 32, "%d", WEXITSTATUS(return_val));
       setenv("?", return_buff, 1);
