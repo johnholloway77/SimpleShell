@@ -12,6 +12,6 @@ int reset_handlers(void);
 int init_reap();
 int stop_reap();
 int reap_background_jobs(void);
-int add_bg_job(pid_t pid, const char *cmd);
+int add_bg_job(pid_t pid, const char* cmd);
 
 #endif  // SIMPLESHELL_SIG_HANDLERS_H
