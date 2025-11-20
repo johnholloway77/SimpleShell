@@ -127,6 +127,8 @@ void sh_loop(char** envp) {
     char keep_line = 0;
     int status;
 
+    (void) reap_background_jobs();
+
     line = sh_read_line();
     if (!line) {
       break;
@@ -423,7 +425,10 @@ int sh_launch(char** args, int async) {
       }
     }
   } else {
-    if (!async) {
+    if (async) {
+      add_bg_job(pid, args[0]);
+    }else {
+
       int return_val = -1;
       waitpid(pid, &return_val, 0);
 
