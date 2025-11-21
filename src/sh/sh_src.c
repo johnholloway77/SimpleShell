@@ -1,6 +1,7 @@
 //
 // Created by jholloway on 10/30/25.
 //
+#include <limits.h>
 #include <signal.h>
 #ifndef __BSD_VISIBLE
 #define __BSD_VISIBLE 1
@@ -22,13 +23,15 @@
 #include "sh_lines.h"
 
 #define UNUSED(x) (void)(x)
-#define TRUE 1
 #define FALSE 0
+#define TRUE 1
+#define SUCCESS_PIPE 2
+#define INVALID_PIPE 3
+#define PIPE_FAILURE 4
+#define MAX_PIPE_COUNT 16
 
 static line_list__node* line_iterator;
 static line_list line_linked_list;
-
-Path_struct* ps;
 
 static void print_lines(char** p_line, void* x) {
   UNUSED(x);
@@ -118,13 +121,14 @@ void sh_loop(char** envp) {
   char** args;
   char** updated_args;
 
-  char* paths = getenv("PATH");
-  // printf("path: %s\n", paths);
-  ps = sh_parse_path_line(paths);
-
   while (1) {
-    char keep_line = 0;
+    char keep_line = FALSE;
     int status;
+
+    if (!(app_flags & C_FLAG)) {
+      printf("JHsh$: ");
+      fflush(stdout);
+    }
 
     (void)reap_background_jobs();
 
@@ -163,13 +167,18 @@ void sh_loop(char** envp) {
 
     free(updated_args);
 
-    if (status == END_SH_LOOP) {
-      sh_exit();
-      break;
+    switch (status) {
+      case END_SH_LOOP:
+        sh_exit();
+        break;
+      case INVALID_PIPE:
+        fprintf(stderr, "Error, invalid pipe command\n");
+        fflush(stderr);
+        fflush(stdout);
+        break;
+      default:
+        break;
     }
-
-    printf("JHsh$: ");
-    fflush(stdout);
   }
 }
 
@@ -239,6 +248,9 @@ int sh_execute(char** args, char* keep) {
 
   // args_end will tell us where the last of the command arguments are.
 
+  Pipe_cmd pipeCmd;
+  memset(&pipeCmd, 0, sizeof(pipeCmd));
+
   char** cmd_args = NULL;
   int cmd_argsc = 0;
   int args_end = 0;
@@ -255,23 +267,39 @@ int sh_execute(char** args, char* keep) {
 
   sh_redirect_init(&redirectStr);
 
+  pipeCmd.args_length = argsc;
+  pipeCmd.args = args;
+
   // parse the section that will be run
   for (int i = 0; i < argsc; i++) {
-    if (((strcmp(args[i], ">") == 0) || (strcmp(args[i], ">>") == 0) ||
-         (strcmp(args[i], "<") == 0))) {
-      args_end = i - 1;
-
-      cmd_args = malloc((i + 1) * sizeof(char*));
-
-      for (int j = 0; j <= args_end; j++) {
-        cmd_args[j] = args[j];
-      }
-      cmd_args[i] = NULL;
-      break;
+    if (strcmp(args[i], "|") == 0) {
+      pipeCmd.pipe_locations[pipeCmd.pipe_count] = i;
+      pipeCmd.pipe_count++;
     }
-    cmd_argsc++;
+
+    /*
+        if (((strcmp(args[i], ">") == 0) || (strcmp(args[i], ">>") == 0) ||
+             (strcmp(args[i], "<") == 0))) {
+          args_end = i - 1;
+
+          cmd_args = malloc((i + 1) * sizeof(char*));
+
+          for (int j = 0; j <= args_end; j++) {
+            cmd_args[j] = args[j];
+          }
+          cmd_args[i] = NULL;
+          break;
+        }
+
+
+        cmd_argsc++;
+
+        */
   }
 
+  return sh_launch_pipe_version(pipeCmd, async);
+
+  /*
   for (int i = argsc - 1; i >= 0; i--) {
     if (strcmp(args[i], "<") == 0) {
       if (!args[i + 1]) {
@@ -384,12 +412,11 @@ int sh_execute(char** args, char* keep) {
   }
 
   return sh_launch(args, async);
+
+   */
 }
 
 int sh_launch(char** args, int async) {
-  char buff[MAXPATHLEN];
-  memset(buff, 0, MAXPATHLEN);
-
   pid_t pid = fork();
   if (pid < 0) {
     perror("fork failed");
@@ -401,28 +428,11 @@ int sh_launch(char** args, int async) {
       (void)fprintf(stderr, "Error resetting signal handlers for child\n");
     }
 
-    if (args[0][0] != '/') {
-      snprintf(buff, MAXPATHLEN, "./%s", args[0]);
-
-      fflush(stdout);
-      execv(buff, args);
-
-      for (int i = 0; i < ps->count; i++) {
-        snprintf(buff, MAXPATHLEN, "%s/%s", ps->path_options[i], args[0]);
-        fflush(stdout);
-        execv(buff, args);
-      }
-
+    if (execvp(args[0], args) < 0) {
       fprintf(stderr, "Error:%s : %s\n", args[0], strerror(errno));
       _exit(EXIT_FAILURE);
-    } else {
-      fflush(stdout);
-      if ((execv(args[0], args)) == -1) {
-        fprintf(stderr, "Error: Unknown command: %s : %s\n", args[0],
-                strerror(errno));
-        _exit(EXIT_FAILURE);
-      }
     }
+
   } else {
     if (async) {
       add_bg_job(pid, args[0]);
@@ -435,4 +445,139 @@ int sh_launch(char** args, int async) {
     }
   }
   return 1;
+}
+
+int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
+  // error checking for token before and after |
+  int pipe_array[MAX_PIPE_COUNT][2];
+  pid_t pids[MAX_PIPE_COUNT + 1];
+
+  for (int i = 0; i < pipeCmd.pipe_count; i++) {
+    int pipe_index = pipeCmd.pipe_locations[i];
+
+    if (pipe_index == 0) {
+      // pipe must be at least one token in
+      return INVALID_PIPE;
+    }
+
+    if (pipeCmd.args[pipe_index + 1] == NULL) {
+      // must have token after pipe
+
+      return INVALID_PIPE;
+    }
+
+    if (strcmp(pipeCmd.args[pipe_index + 1], "|") == 0) {
+      // cannot have to pipes tokens in a row.
+      return INVALID_PIPE;
+    }
+  }
+
+  // remove the | tokens
+  for (int i = 0; i < pipeCmd.pipe_count; i++) {
+    int pipe_index = pipeCmd.pipe_locations[i];
+
+    pipeCmd.args[pipe_index] = NULL;
+  }
+
+  for (int p = 0; p < pipeCmd.pipe_count; ++p) {
+    if (pipe(pipe_array[p]) == -1) {
+      return PIPE_FAILURE;
+    }
+  }
+
+  int cmd_count = pipeCmd.pipe_count + 1;
+
+  for (int i = 0; i <= cmd_count; i++) {
+    //
+
+    // we're lazy so we're limiting the shell to receive 17 tokens
+    // each token is defined as the arguments separated by pipes
+    char* tokens[MAX_PIPE_COUNT + 1] = {0};
+
+    int iterator;
+
+    if (i == 0) {
+      iterator = 0;
+    } else {
+      iterator = pipeCmd.pipe_locations[i - 1] + 1;
+    }
+
+    int j = 0;
+    while (pipeCmd.args[iterator]) {
+      tokens[j] = pipeCmd.args[iterator];
+      j++;
+      iterator++;
+    }
+    tokens[j] = NULL;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // FORK HERE
+    /////////////////////////////////////
+
+    pid_t pid = fork();
+    if (pid < 0) {
+      perror("fork failed");
+      for (int p = 0; p < pipeCmd.pipe_count; ++p) {
+        close(pipe_array[p][0]);
+        close(pipe_array[p][1]);
+      }
+      return PIPE_FAILURE;
+    }
+
+    if (pid == 0) {
+      if (pipeCmd.pipe_count > 0) {
+        if (i == 0) {
+          // first command
+          dup2(pipe_array[i][1], STDOUT_FILENO);
+        } else if (i == cmd_count - 1) {
+          // last command
+          dup2(pipe_array[pipeCmd.pipe_count - 1][0], STDIN_FILENO);
+
+        } else {
+          // middle commands
+          dup2(pipe_array[i - 1][0], STDIN_FILENO);
+          dup2(pipe_array[i][1], STDOUT_FILENO);
+        }
+      }
+
+      for (int p = 0; p < pipeCmd.pipe_count; p++) {
+        close(pipe_array[p][0]);
+        close(pipe_array[p][1]);
+      }
+
+      if (execvp(tokens[0], tokens) < 0) {
+        fprintf(stderr, "Error:%s : %s\n", tokens[0], strerror(errno));
+        _exit(EXIT_FAILURE);
+      }
+    } else {
+      pids[i] = pid;
+    }
+  }
+
+  for (int p = 0; p < pipeCmd.pipe_count; p++) {
+    close(pipe_array[p][0]);
+    close(pipe_array[p][1]);
+  }
+
+  if (async) {
+    // background job
+    add_bg_job(pids[0], pipeCmd.args[0]);
+  } else {
+    // foreground job
+
+    int status = 0;
+    int last_status = 0;
+
+    for (int i = 0; i < cmd_count; i++) {
+      if (waitpid(pids[i], &status, 0) > 0) {
+        last_status = status;
+      }
+    }
+
+    char return_buff[32];
+    snprintf(return_buff, sizeof(return_buff), "%d", WEXITSTATUS(last_status));
+    setenv("?", return_buff, 1);
+  }
+
+  return SUCCESS_PIPE;
 }

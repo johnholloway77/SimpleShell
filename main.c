@@ -60,9 +60,9 @@ int main(int argc, char** argv, char** envp) {
     // atexit(restore);
 
     sh_init_linked_list();
-    printf("JHsh$: ");
-
-    fflush(stdout);
+    //    printf("JHsh$: ");
+    //
+    //    fflush(stdout);
     sh_loop(envp);
   } else {
     if (argc > 2) {
