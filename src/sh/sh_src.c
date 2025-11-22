@@ -119,6 +119,7 @@ void sh_loop(char** envp) {
   char* line;
   char** args;
   char** updated_args;
+  uint32_t updated_args_count;
 
   while (1) {
     char keep_line = FALSE;
@@ -146,7 +147,8 @@ void sh_loop(char** envp) {
       continue;
     }
 
-    // status = sh_execute(args, &keep_line);
+    updated_args_count = arg_count(updated_args);
+
     status = sh_execute(updated_args, &keep_line);
 
     if (keep_line) {
@@ -158,10 +160,9 @@ void sh_loop(char** envp) {
     free(line);
     free(args);  // free's indicate we will return a pointer
 
-    int i = 0;
-    while (updated_args[i]) {
+
+    for (int i = 0; i < updated_args_count; i++) {
       free(updated_args[i]);
-      i++;
     }
 
     free(updated_args);
