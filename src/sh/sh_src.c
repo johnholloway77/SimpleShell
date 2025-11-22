@@ -260,10 +260,6 @@ int sh_execute(char** args, char* keep) {
     async = TRUE;
   }
 
-//  Redirect_str redirectStr;
-//
-//  sh_redirect_init(&redirectStr);
-
   pipeCmd.args_length = argsc;
   pipeCmd.args = args;
 
