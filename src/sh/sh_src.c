@@ -274,37 +274,6 @@ int sh_execute(char** args, char* keep) {
   return sh_launch_pipe_version(pipeCmd, async);
 }
 
-int sh_launch(char** args, int async) {
-  pid_t pid = fork();
-  if (pid < 0) {
-    perror("fork failed");
-    exit(EXIT_FAILURE);
-  }
-
-  if (pid == 0) {
-    if (reset_handlers() == -1) {
-      (void)fprintf(stderr, "Error resetting signal handlers for child\n");
-    }
-
-    if (execvp(args[0], args) < 0) {
-      fprintf(stderr, "Error:%s : %s\n", args[0], strerror(errno));
-      _exit(EXIT_FAILURE);
-    }
-
-  } else {
-    if (async) {
-      add_bg_job(pid, args[0]);
-    } else {
-      int return_val = -1;
-      waitpid(pid, &return_val, 0);
-      char return_buff[32];
-      snprintf(return_buff, 32, "%d", WEXITSTATUS(return_val));
-      setenv("?", return_buff, 1);
-    }
-  }
-  return 1;
-}
-
 int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
   // error checking for token before and after |
   int pipe_array[MAX_PIPE_COUNT][2];
