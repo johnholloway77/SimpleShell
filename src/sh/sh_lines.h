@@ -17,7 +17,6 @@ typedef struct path_struct {
 uint32_t arg_count(char** args);
 char* sh_read_line(void);
 char** sh_split_line(char* line);
-//Path_struct* sh_parse_path_line(char* path_line);
 char** update_args(char** args, char** envp);
 
 #endif  // SIMPLESHELL_SH_LINES_H
