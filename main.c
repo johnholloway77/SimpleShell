@@ -38,12 +38,6 @@ int main(int argc, char** argv, char** envp) {
     char* app_name = (char*)malloc(MAXPATHLEN);
     memset(app_name, 0, MAXPATHLEN);
 
-    char* argv0 = argv[0];
-    char* slash = strrchr(argv0, '/');
-    if (slash) {
-      argv0 = slash + 1;
-    }
-
     strlcat(app_name, cwd, MAXPATHLEN);
 
     setenv("SHELL", app_name, 1);
@@ -56,17 +50,36 @@ int main(int argc, char** argv, char** envp) {
     free(cwd);
     free(app_name);
 
-    // set_raw();
-    // atexit(restore);
 
     sh_init_linked_list();
-    //    printf("JHsh$: ");
-    //
-    //    fflush(stdout);
     sh_loop(envp);
   } else {
     if (argc > 2) {
-      sh_launch(&argv[2], 0);
+
+        char keep_line = 0;
+        char** argv_copy = malloc((argc - 2 + 1) * sizeof(char*));
+        int i = 0;
+        while ( i < argc -2){
+          argv_copy[i] = strdup(argv[i + 2]);
+          i++;
+        }
+        argv_copy[i] = NULL;
+
+        char** updated_args;
+        uint32_t updated_args_count;
+        updated_args = update_args(argv_copy, envp);
+        updated_args_count = arg_count(updated_args);
+        sh_execute(updated_args, &keep_line);
+
+        for (int i =  0; i < updated_args_count; i++){
+            free(updated_args[i]);
+        }
+        free(updated_args);
+
+        for(int i = 0; i < argc -2; i++){
+            free(argv_copy[i]);
+        }
+        free(argv_copy);
     }
   }
 
