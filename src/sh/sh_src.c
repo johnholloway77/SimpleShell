@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/param.h>
 #include <unistd.h>
 
 #include "../flags/flags.h"
@@ -251,10 +250,6 @@ int sh_execute(char** args, char* keep) {
   Pipe_cmd pipeCmd;
   memset(&pipeCmd, 0, sizeof(pipeCmd));
 
-  char** cmd_args = NULL;
-  int cmd_argsc = 0;
-  int args_end = 0;
-
   int last_position = strlen(args[argsc - 1]) - 1;
   char* last_char = &args[argsc - 1][last_position];
 
@@ -276,144 +271,9 @@ int sh_execute(char** args, char* keep) {
       pipeCmd.pipe_locations[pipeCmd.pipe_count] = i;
       pipeCmd.pipe_count++;
     }
-
-    /*
-        if (((strcmp(args[i], ">") == 0) || (strcmp(args[i], ">>") == 0) ||
-             (strcmp(args[i], "<") == 0))) {
-          args_end = i - 1;
-
-          cmd_args = malloc((i + 1) * sizeof(char*));
-
-          for (int j = 0; j <= args_end; j++) {
-            cmd_args[j] = args[j];
-          }
-          cmd_args[i] = NULL;
-          break;
-        }
-
-
-        cmd_argsc++;
-
-        */
   }
 
   return sh_launch_pipe_version(pipeCmd, async);
-
-  /*
-  for (int i = argsc - 1; i >= 0; i--) {
-    if (strcmp(args[i], "<") == 0) {
-      if (!args[i + 1]) {
-        fprintf(stderr, "invalid redirect. Missing input for <\n");
-        sh_restore_fd(&redirectStr);
-        free(cmd_args);
-        return -1;
-      }
-
-      redirectStr.redir_in = TRUE;
-
-      if (args[i + 1]) {
-        if (redirectStr.fd_in != -1) {
-          close(redirectStr.fd_in);
-        }
-
-        if ((redirectStr.fd_in = open(args[i + 1], O_RDONLY | O_NONBLOCK)) <
-            0) {
-          sh_restore_fd(&redirectStr);
-          free(cmd_args);
-          fprintf(stderr, "Could not open file: %s\nerror: %s\n", args[i + 1],
-                  strerror(errno));
-          return -1;
-        }
-
-      } else {
-        fprintf(stderr, "Invalid redirection. Need source.");
-      }
-    }
-  }
-
-  // redirect output to file
-  // goes left to right with rightmost redirect being the dominant one.
-  for (int i = 0; i < argsc; i++) {
-    if (strcmp(args[i], ">") == 0) {
-      if (i == 0 || !args[i + 1]) {
-        fprintf(stderr,
-                "invalid redirect. Missing input or output for > redirect\n");
-        sh_restore_fd(&redirectStr);
-        free(cmd_args);
-        return -1;
-      }
-
-      if (args[i + 1]) {
-        redirectStr.redir_out = TRUE;
-
-        if (redirectStr.fd_out != -1) {
-          close(redirectStr.fd_out);
-        }
-
-        if ((redirectStr.fd_out =
-                 open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0666)) == -1) {
-          sh_restore_fd(&redirectStr);
-          free(cmd_args);
-          fprintf(stderr, "could not open file %s\n", args[i + 1]);
-          return -1;
-        }
-      }
-    }
-
-    if (strcmp(args[i], ">>") == 0) {
-      if (i == 0 || !args[i + 1]) {
-        fprintf(stderr,
-                "invalid redirect. Missing input or output for >> redirect\n");
-        sh_restore_fd(&redirectStr);
-        free(cmd_args);
-        return -1;
-      }
-
-      if (args[i + 1]) {
-        redirectStr.redir_out = TRUE;
-        if (redirectStr.fd_out != -1) {
-          close(redirectStr.fd_out);
-        }
-
-        if ((redirectStr.fd_out = open(
-                 args[i + 1], O_WRONLY | O_CREAT | O_APPEND, 0666)) == -1) {
-          sh_restore_fd(&redirectStr);
-          free(cmd_args);
-          fprintf(stderr, "could not open file %s\n", args[i + 1]);
-          return -1;
-        }
-      }
-    }
-  }
-
-  if (redirectStr.redir_out == TRUE) {
-    dup2(redirectStr.fd_out, STDOUT_FILENO);
-  }
-
-  if (redirectStr.redir_in == TRUE) {
-    dup2(redirectStr.fd_in, STDIN_FILENO);
-  }
-
-  if (redirectStr.redir_in || redirectStr.redir_out) {
-    int ret_val = sh_launch(cmd_args, async);
-
-    sh_close_fd(&redirectStr);
-    sh_restore_fd(&redirectStr);
-
-    if (cmd_args) {
-      free(cmd_args);
-    }
-
-    return ret_val;
-  }
-
-  if (cmd_args) {
-    free(cmd_args);
-  }
-
-  return sh_launch(args, async);
-
-   */
 }
 
 int sh_launch(char** args, int async) {
@@ -510,12 +370,14 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
     }
     tokens[token_counter] = NULL;
 
+#ifdef DEBUGMODE
     int test = 0;
-    while(tokens[test] ){
-        printf("%s ", tokens[test]);
-        test++;
+    while (tokens[test]) {
+      printf("%s ", tokens[test]);
+      test++;
     }
     printf("\n");
+#endif
 
     int redirect = FALSE;
     char** cmd_args = NULL;
@@ -524,23 +386,21 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
 
     // parse the section that will be run
     for (int l = 0; l < token_counter; l++) {
-          if (((strcmp(tokens[l], ">") == 0) || (strcmp(tokens[l], ">>") == 0) ||
-               (strcmp(tokens[l], "<") == 0))) {
-            redirect = TRUE;
-            cmd_args_end = l - 1;
+      if (((strcmp(tokens[l], ">") == 0) || (strcmp(tokens[l], ">>") == 0) ||
+           (strcmp(tokens[l], "<") == 0))) {
+        redirect = TRUE;
+        cmd_args_end = l - 1;
 
-            cmd_args = malloc((l + 1) * sizeof(char*));
+        cmd_args = malloc((l + 1) * sizeof(char*));
 
-            for (int j = 0; j <= cmd_args_end; j++) {
-              cmd_args[j] = tokens[j];
-            }
-            cmd_args[l] = NULL;
-            break;
-          }
+        for (int j = 0; j <= cmd_args_end; j++) {
+          cmd_args[j] = tokens[j];
+        }
+        cmd_args[l] = NULL;
+        break;
+      }
 
-
-          cmd_args_count++;
-
+      cmd_args_count++;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -581,8 +441,7 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
       ///////////////////////////////////////////////////
       // redirect
       //////////////////////////////////////////////////
-      if (redirect){
-
+      if (redirect && cmd_args != NULL) {
         Redirect_str redirectStr;
         sh_redirect_init(&redirectStr);
 
@@ -602,12 +461,12 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
                 close(redirectStr.fd_in);
               }
 
-              if ((redirectStr.fd_in = open(tokens[l + 1], O_RDONLY | O_NONBLOCK)) <
-                  0) {
+              if ((redirectStr.fd_in =
+                       open(tokens[l + 1], O_RDONLY | O_NONBLOCK)) < 0) {
                 sh_restore_fd(&redirectStr);
                 free(cmd_args);
-                fprintf(stderr, "Could not open file: %s\nerror: %s\n", tokens[l + 1],
-                        strerror(errno));
+                fprintf(stderr, "Could not open file: %s\nerror: %s\n",
+                        tokens[l + 1], strerror(errno));
                 return -1;
               }
 
@@ -622,8 +481,9 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
         for (int l = 0; l < token_counter; l++) {
           if (strcmp(tokens[l], ">") == 0) {
             if (l == 0 || !tokens[l + 1]) {
-              fprintf(stderr,
-                      "invalid redirect. Missing input or output for > redirect\n");
+              fprintf(
+                  stderr,
+                  "invalid redirect. Missing input or output for > redirect\n");
               sh_restore_fd(&redirectStr);
               free(cmd_args);
               return -1;
@@ -636,8 +496,9 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
                 close(redirectStr.fd_out);
               }
 
-              if ((redirectStr.fd_out =
-                           open(tokens[l + 1], O_WRONLY | O_CREAT | O_TRUNC, 0666)) == -1) {
+              if ((redirectStr.fd_out = open(
+                       tokens[l + 1], O_WRONLY | O_CREAT | O_TRUNC, 0666)) ==
+                  -1) {
                 sh_restore_fd(&redirectStr);
                 free(cmd_args);
                 fprintf(stderr, "could not open file %s\n", tokens[l + 1]);
@@ -649,7 +510,8 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
           if (strcmp(tokens[l], ">>") == 0) {
             if (l == 0 || !tokens[l + 1]) {
               fprintf(stderr,
-                      "invalid redirect. Missing input or output for >> redirect\n");
+                      "invalid redirect. Missing input or output for >> "
+                      "redirect\n");
               sh_restore_fd(&redirectStr);
               free(cmd_args);
               return -1;
@@ -662,7 +524,8 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
               }
 
               if ((redirectStr.fd_out = open(
-                      tokens[l + 1], O_WRONLY | O_CREAT | O_APPEND, 0666)) == -1) {
+                       tokens[l + 1], O_WRONLY | O_CREAT | O_APPEND, 0666)) ==
+                  -1) {
                 sh_restore_fd(&redirectStr);
                 free(cmd_args);
                 fprintf(stderr, "could not open file %s\n", tokens[l + 1]);
@@ -681,7 +544,7 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
         }
 
         if (redirectStr.redir_in || redirectStr.redir_out) {
-          //int ret_val = sh_launch(cmd_args, async);
+          // int ret_val = sh_launch(cmd_args, async);
 
           pid_t pid2 = fork();
           if (pid2 < 0) {
@@ -691,7 +554,8 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
 
           if (pid2 == 0) {
             if (reset_handlers() == -1) {
-              (void)fprintf(stderr, "Error resetting signal handlers for child\n");
+              (void)fprintf(stderr,
+                            "Error resetting signal handlers for child\n");
             }
 
             if (execvp(cmd_args[0], cmd_args) < 0) {
@@ -699,31 +563,27 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
               _exit(EXIT_FAILURE);
             }
 
-          } else{
+          } else {
             int return_val = -1;
             waitpid(pid2, &return_val, 0);
             exit(EXIT_SUCCESS);
           }
 
-            //int ret_val = printf("redirect launch here\n");
+          // int ret_val = printf("redirect launch here\n");
 
           sh_close_fd(&redirectStr);
           sh_restore_fd(&redirectStr);
 
-          if (cmd_args) {
-            free(cmd_args);
-          }
-
           return 1;
         }
 
-        if (cmd_args) {
+        if (cmd_args_count > 0) {
           free(cmd_args);
         }
 
-        //return sh_launch(tokens, async);
+        // return sh_launch(tokens, async);
         printf("redirect launch here\n");
-      } else{
+      } else {
         ///////////////////////////////
         //         no redirect
         ////////////////////////////
@@ -734,6 +594,9 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
         }
       }
 
+      if (cmd_args != NULL) {
+        free(cmd_args);
+      }
 
     } else {
       pids[i] = pid;
