@@ -148,6 +148,7 @@ void sh_loop(char** envp) {
     }
 
     updated_args_count = arg_count(updated_args);
+    printf("Updated arg count: %u\n", updated_args_count);
 
     status = sh_execute(updated_args, &keep_line);
 
@@ -259,9 +260,9 @@ int sh_execute(char** args, char* keep) {
     async = TRUE;
   }
 
-  Redirect_str redirectStr;
-
-  sh_redirect_init(&redirectStr);
+//  Redirect_str redirectStr;
+//
+//  sh_redirect_init(&redirectStr);
 
   pipeCmd.args_length = argsc;
   pipeCmd.args = args;
@@ -337,6 +338,7 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
   for (int i = 0; i < pipeCmd.pipe_count; i++) {
     int pipe_index = pipeCmd.pipe_locations[i];
 
+    free(pipeCmd.args[pipe_index]);
     pipeCmd.args[pipe_index] = NULL;
   }
 
@@ -369,6 +371,8 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
       token_counter++;
       iterator++;
     }
+
+
     tokens[token_counter] = NULL;
 
 #ifdef DEBUGMODE
