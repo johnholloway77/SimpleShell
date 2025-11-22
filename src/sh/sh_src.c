@@ -600,6 +600,10 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
 
     } else {
       pids[i] = pid;
+
+      if (cmd_args_count > 0) {
+        free(cmd_args);
+      }
     }
   }
 
