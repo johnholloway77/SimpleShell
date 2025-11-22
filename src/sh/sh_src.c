@@ -487,7 +487,7 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
 
   int cmd_count = pipeCmd.pipe_count + 1;
 
-  for (int i = 0; i <= cmd_count; i++) {
+  for (int i = 0; i < cmd_count; i++) {
     //
 
     // we're lazy so we're limiting the shell to receive 17 tokens
@@ -509,6 +509,13 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
       iterator++;
     }
     tokens[j] = NULL;
+
+    int test = 0;
+    while(tokens[test] ){
+        printf("%s ", tokens[test]);
+        test++;
+    }
+    printf("\n");
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
     // FORK HERE
