@@ -20,10 +20,9 @@
 #include "../str/strtrim.h"
 #include "./sh_src.h"
 #include "sh_lines.h"
+#include "bools.h"
 
 #define UNUSED(x) (void)(x)
-#define FALSE 0
-#define TRUE 1
 #define SUCCESS_PIPE 2
 #define INVALID_PIPE 3
 #define PIPE_FAILURE 4
