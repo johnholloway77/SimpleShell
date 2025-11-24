@@ -10,6 +10,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "../flags/flags.h"
+#include "../flags/set_flags.h"
 #include "../sig/sig_handlers.h"
 #include "bools.h"
 #include "sh_launch.h"
@@ -301,6 +303,11 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
                           "Error resetting signal handlers for child\n");
           }
 
+          if ((app_flags & X_FLAG)) {
+            fprintf(stdout, "+ %s\n", tokens[0]);
+            fflush(stdout);
+          }
+
           if (execvp(cmd_args[0], cmd_args) < 0) {
             fprintf(stderr, "Error:%s : %s\n", cmd_args[0], strerror(errno));
             _exit(EXIT_FAILURE);
@@ -315,6 +322,11 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
         ///////////////////////////////
         //         no redirect
         ////////////////////////////
+
+        if ((app_flags & X_FLAG)) {
+          fprintf(stdout, "+ %s\n", tokens[0]);
+          fflush(stdout);
+        }
 
         if (execvp(tokens[0], tokens) < 0) {
           fprintf(stderr, "Error:%s : %s\n", tokens[0], strerror(errno));

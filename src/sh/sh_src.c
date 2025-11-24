@@ -94,6 +94,10 @@ void sh_loop(char** envp) {
 
     updated_args_count = arg_count(updated_args);
 
+    if ((app_flags & X_FLAG)) {
+      fprintf(stdout, "+ %s\n", updated_args[0]);
+      fflush(stdout);
+    }
     status = sh_execute(updated_args, &keep_line);
 
     if (keep_line) {
@@ -117,6 +121,11 @@ void sh_loop(char** envp) {
         break;
       case INVALID_PIPE:
         fprintf(stderr, "Error, invalid pipe command\n");
+        fflush(stderr);
+        fflush(stdout);
+        break;
+      case REDIRECT_ERROR:
+        fprintf(stderr, "Error, unable to redirect input/output\n");
         fflush(stderr);
         fflush(stdout);
         break;
