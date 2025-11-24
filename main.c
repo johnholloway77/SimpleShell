@@ -3,19 +3,17 @@
 //
 
 #include <stdio.h>
-#define _POSIX_C_SOURCE 200809L
-#define __BSD_VISIBLE 1
-
 #include <stdlib.h>
 #include <sys/param.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "src/flags/flags.h"
 #include "src/flags/set_flags.h"
 #include "src/sh/sh_src.h"
 #include "src/sig/sig_handlers.h"
 #include "src/str/strl.h"
-#include "src/term/term.h"
+#include "src/sh/sh_lines.h"
 
 char* cwd = NULL;
 
@@ -50,36 +48,34 @@ int main(int argc, char** argv, char** envp) {
     free(cwd);
     free(app_name);
 
-
     sh_init_linked_list();
     sh_loop(envp);
   } else {
     if (argc > 2) {
+      char keep_line = 0;
+      char** argv_copy = malloc((argc - 2 + 1) * sizeof(char*));
+      int i = 0;
+      while (i < argc - 2) {
+        argv_copy[i] = strdup(argv[i + 2]);
+        i++;
+      }
+      argv_copy[i] = NULL;
 
-        char keep_line = 0;
-        char** argv_copy = malloc((argc - 2 + 1) * sizeof(char*));
-        int i = 0;
-        while ( i < argc -2){
-          argv_copy[i] = strdup(argv[i + 2]);
-          i++;
-        }
-        argv_copy[i] = NULL;
+      char** updated_args;
+      uint32_t updated_args_count;
+      updated_args = update_args(argv_copy, envp);
+      updated_args_count = arg_count(updated_args);
+      sh_execute(updated_args, &keep_line);
 
-        char** updated_args;
-        uint32_t updated_args_count;
-        updated_args = update_args(argv_copy, envp);
-        updated_args_count = arg_count(updated_args);
-        sh_execute(updated_args, &keep_line);
+      for (int j = 0; j < updated_args_count; j++) {
+        free(updated_args[j]);
+      }
+      free(updated_args);
 
-        for (int i =  0; i < updated_args_count; i++){
-            free(updated_args[i]);
-        }
-        free(updated_args);
-
-        for(int i = 0; i < argc -2; i++){
-            free(argv_copy[i]);
-        }
-        free(argv_copy);
+      for (int j = 0; j < argc - 2; j++) {
+        free(argv_copy[j]);
+      }
+      free(argv_copy);
     }
   }
 
