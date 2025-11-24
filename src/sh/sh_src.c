@@ -67,7 +67,6 @@ void sh_loop(char** envp) {
   uint32_t updated_args_count;
 
   while (1) {
-    char keep_line = FALSE;
     int status;
 
     if (!(app_flags & C_FLAG)) {
@@ -98,13 +97,9 @@ void sh_loop(char** envp) {
       fprintf(stdout, "+ %s\n", updated_args[0]);
       fflush(stdout);
     }
-    status = sh_execute(updated_args, &keep_line);
+    status = sh_execute(updated_args);
 
-    if (keep_line) {
-      line_list_push_tail(&line_linked_list, line_duplicate);
-    } else {
-      free(line_duplicate);
-    }
+    line_list_push_tail(&line_linked_list, line_duplicate);
 
     free(line);
     free(args);  // free's indicate we will return a pointer
@@ -135,7 +130,7 @@ void sh_loop(char** envp) {
   }
 }
 
-int sh_execute(char** args, char* keep) {
+int sh_execute(char** args) {
   uint8_t argsc = 0;
   int async = FALSE;
 
@@ -191,11 +186,6 @@ int sh_execute(char** args, char* keep) {
     }
     return CONT_SH_LOOP;
   }
-
-  *keep = 1;
-  // for IO redirect we need to recognize "<" and ">" characters.
-
-  // args_end will tell us where the last of the command arguments are.
 
   Pipe_cmd pipeCmd;
   memset(&pipeCmd, 0, sizeof(pipeCmd));

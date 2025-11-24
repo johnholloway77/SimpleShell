@@ -52,7 +52,6 @@ int main(int argc, char** argv, char** envp) {
     sh_loop(envp);
   } else {
     if (argc > 2) {
-      char keep_line = 0;
       char** argv_copy = malloc((argc - 2 + 1) * sizeof(char*));
       int i = 0;
       while (i < argc - 2) {
@@ -65,7 +64,7 @@ int main(int argc, char** argv, char** envp) {
       uint32_t updated_args_count;
       updated_args = update_args(argv_copy, envp);
       updated_args_count = arg_count(updated_args);
-      sh_execute(updated_args, &keep_line);
+      sh_execute(updated_args);
 
       for (int j = 0; j < updated_args_count; j++) {
         free(updated_args[j]);

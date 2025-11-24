@@ -10,7 +10,7 @@
 #define CONT_SH_LOOP 1
 #define END_SH_LOOP 0
 
-int sh_execute(char** args, char* keep);
+int sh_execute(char** args);
 void sh_init_linked_list();
 void sh_loop(char** envp);
 
