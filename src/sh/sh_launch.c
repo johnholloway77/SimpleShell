@@ -6,11 +6,13 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#if defined(__linux__)
-#include <bsd/string.h>
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || \
+    defined(__APPLE__)
+#include <string.h>  // strlcpy/strlcat are in libc
 #else
-#include <string.h>
+#include <bsd/string.h>  // provided by libbsd-dev
 #endif
+
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -225,7 +227,8 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
                 free(cmd_args);
                 fprintf(stderr, "Could not open file: %s\nerror: %s\n",
                         tokens[l + 1], strerror(errno));
-                return -1;
+                // inside of fork we should exit to avoid two processes
+                _exit(EXIT_FAILURE);
               }
 
             } else {
@@ -260,7 +263,8 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
                 sh_restore_fd(&redirectStr);
                 free(cmd_args);
                 fprintf(stderr, "could not open file %s\n", tokens[l + 1]);
-                return -1;
+                // inside of fork we should exit to avoid two processes
+                _exit(EXIT_FAILURE);
               }
             }
           }
@@ -287,7 +291,8 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
                 sh_restore_fd(&redirectStr);
                 free(cmd_args);
                 fprintf(stderr, "could not open file %s\n", tokens[l + 1]);
-                return -1;
+                // inside of fork we should exit to avoid two processes
+                _exit(EXIT_FAILURE);
               }
             }
           }

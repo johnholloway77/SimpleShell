@@ -6,11 +6,14 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#if defined(__linux__)
-#include <bsd/string.h>
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || \
+    defined(__APPLE__)
+#include <string.h>  // strlcpy/strlcat are in libc
 #else
-#include <string.h>
+// Linux / glibc, etc.
+#include <bsd/string.h>  // provided by libbsd-dev
 #endif
+
 #include <sys/wait.h>
 
 #include "sig_handlers.h"

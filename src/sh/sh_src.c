@@ -9,11 +9,13 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#if defined(__linux__)
-#include <bsd/string.h>
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || \
+    defined(__APPLE__)
+#include <string.h>  // strlcpy/strlcat are in libc
 #else
-#include <string.h>
+#include <bsd/string.h>  // provided by libbsd-dev
 #endif
+
 #include <unistd.h>
 
 #include "../flags/flags.h"
