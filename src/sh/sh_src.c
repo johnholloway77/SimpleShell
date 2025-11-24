@@ -9,7 +9,11 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#if defined(__linux__)
+#include <bsd/string.h>
+#else
 #include <string.h>
+#endif
 #include <unistd.h>
 
 #include "../flags/flags.h"

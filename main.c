@@ -4,7 +4,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#if defined(__linux__)
+#include <bsd/string.h>
+#else
 #include <string.h>
+#endif
 #include <sys/param.h>
 #include <unistd.h>
 

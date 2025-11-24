@@ -5,7 +5,11 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#if defined(__linux__)
+#include <bsd/string.h>
+#else
 #include <string.h>
+#endif
 
 #include "../str/strl.h"
 #include "sh_lines.h"
