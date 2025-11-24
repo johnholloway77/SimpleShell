@@ -4,16 +4,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/param.h>
 #include <unistd.h>
-#include <string.h>
 
 #include "src/flags/flags.h"
 #include "src/flags/set_flags.h"
+#include "src/sh/sh_lines.h"
 #include "src/sh/sh_src.h"
 #include "src/sig/sig_handlers.h"
 #include "src/str/strl.h"
-#include "src/sh/sh_lines.h"
 
 char* cwd = NULL;
 

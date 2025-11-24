@@ -29,13 +29,16 @@ void sh_redirect_init(Redirect_str* redir) {
 void sh_restore_fd(Redirect_str* redir) {
   if (redir->redir_in == TRUE) {
     dup2(redir->saved_stdin, STDIN_FILENO);
+    close(redir->saved_stdin);
   }
 
   if (redir->redir_out) {
     dup2(redir->saved_stdout, STDOUT_FILENO);
+    close(redir->saved_stdout);
   }
   if (redir->redir_err) {
     dup2(redir->saved_stderr, STDERR_FILENO);
+    close(redir->saved_stderr);
   }
 }
 
@@ -163,8 +166,8 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
         close(pipe_array[p][1]);
       }
 
-      if(cmd_args_count > 0){
-          free(cmd_args);
+      if (cmd_args_count > 0) {
+        free(cmd_args);
       }
 
       return PIPE_FAILURE;
