@@ -10,6 +10,7 @@
 #define SUCCESS_PIPE 2
 #define INVALID_PIPE 3
 #define PIPE_FAILURE 4
+#define REDIRECT_ERROR 5
 #define MAX_PIPE_COUNT 16
 
 typedef struct redirect_str {

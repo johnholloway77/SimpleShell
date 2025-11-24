@@ -52,20 +52,6 @@ void sh_restore_fd(Redirect_str* redir) {
   }
 }
 
-void sh_close_fd(Redirect_str* redir) {
-  if (redir->fd_in != -1) {
-    close(redir->fd_in);
-  }
-
-  if (redir->fd_out != -1) {
-    close(redir->fd_out);
-  }
-
-  if (redir->fd_err != -1) {
-    close(redir->fd_err);
-  }
-}
-
 int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
   // error checking for token before and after |
   int pipe_array[MAX_PIPE_COUNT][2];
@@ -310,8 +296,6 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
         }
 
         if (redirectStr.redir_in || redirectStr.redir_out) {
-
-
           if (reset_handlers() == -1) {
             (void)fprintf(stderr,
                           "Error resetting signal handlers for child\n");
@@ -322,36 +306,11 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
             _exit(EXIT_FAILURE);
           }
 
-//
-//          pid_t pid2 = fork();
-//          if (pid2 < 0) {
-//            perror("fork failed");
-//            exit(EXIT_FAILURE);
-//          }
-//
-//          if (pid2 == 0) {
-//          } else {
-//            int return_val = -1;
-//            waitpid(pid2, &return_val, 0);
-//            exit(EXIT_SUCCESS);
-//          }
-
-          // int ret_val = printf("redirect launch here\n");
-
-          sh_close_fd(&redirectStr);
+          // This section should not be reached
           sh_restore_fd(&redirectStr);
-
-          return 1;
+          return REDIRECT_ERROR;
         }
 
-        // This section will never be reached, we can remove it...right?
-
-        if (cmd_args_count > 0) {
-          free(cmd_args);
-        }
-
-        // return sh_launch(tokens, async);
-        printf("redirect launch here\n");
       } else {
         ///////////////////////////////
         //         no redirect
