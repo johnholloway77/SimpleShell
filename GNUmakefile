@@ -67,13 +67,13 @@ COVERAGE_RESULTS := results.coverage
 
 .SUFFIXES: .c .o
 .c.o:
-        $(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUG) -c -o $@ $<
+		$(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUG) -c -o $@ $<
 
 $(BINARY): $(OBJECTS)
-        $(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(OBJECTS) $(LIBS)
+		$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(OBJECTS) $(LIBS)
 
 $(TEST_BINARY): $(TEST_OBJECTS)
-        $(CC) $(DEBUG) $(LDFLAGS) -o $@ $(TEST_OBJECTS) $(TEST_LIBS) $(TEST_MACRO_DEFINE)
+		$(CC) $(DEBUG) $(LDFLAGS) -o $@ $(TEST_OBJECTS) $(TEST_LIBS) $(TEST_MACRO_DEFINE)
 
 ###############################################################################
 # Test targets
@@ -81,11 +81,11 @@ $(TEST_BINARY): $(TEST_OBJECTS)
 
 .PHONY: test
 test: $(TEST_BINARY)
-        ./$(TEST_BINARY) --verbose=1
+		./$(TEST_BINARY) --verbose=1
 
 .PHONY: check-deps
 check-deps:
-        @set -e; missing=; \
+		@set -e; missing=; \
         for t in "$(STYLE_CHECK)" "$(STATIC_ANALYSIS)" "doxygen"; do \
           if ! command -v $$t >/dev/null 2>&1; then \
             printf "Missing dependency: %s\n" "$$t"; missing=1; \
@@ -102,11 +102,11 @@ check-deps:
 
 .PHONY: static
 static: check-deps
-        $(STATIC_ANALYSIS) --verbose --enable=all --error-exitcode=1 ./main.c $(SRC_DIR)/*.c
+		$(STATIC_ANALYSIS) --verbose --enable=all --error-exitcode=1 ./main.c $(SRC_DIR)/*.c
 
 .PHONY: style
 style: check-deps
-        $(STYLE_CHECK) ./main.c $(SRC_DIR)/*.c
+		$(STYLE_CHECK) ./main.c $(SRC_DIR)/*.c
 
 ###############################################################################
 # Documentation
@@ -114,7 +114,7 @@ style: check-deps
 
 .PHONY: docs-html
 docs-html: $(DOXYFILE) $(SRC_DIR) main.c check-deps
-        doxygen docs/doxyfile
+		doxygen docs/doxyfile
 
 ###############################################################################
 # Coverage (FreeBSD vs Linux)
@@ -129,19 +129,19 @@ TEST_LIBS   += -lcriterion -lpthread
 
 .PHONY: coverage
 coverage: clean-exec clean-cov
-        # Build the test runner *with coverage instrumentation* and *without main.c*.
-        $(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUG) $(COV_CFLAGS) \
+		# Build the test runner *with coverage instrumentation* and *without main.c*.
+		$(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUG) $(COV_CFLAGS) \
               $(INCLUDE) $(LDFLAGS) \
               -o $(TEST_BINARY) $(TEST_SOURCES) $(TEST_LIBS) $(COV_LDFLAGS)
 
         # One .profraw per process (Criterion forks)
-        LLVM_PROFILE_FILE="coverage-%p.profraw" ./$(TEST_BINARY)
+		LLVM_PROFILE_FILE="coverage-%p.profraw" ./$(TEST_BINARY)
 
         # Merge all per-process profiles
-        $(LLVMPROFDATA) merge -sparse coverage-*.profraw -o coverage.profdata
+		$(LLVMPROFDATA) merge -sparse coverage-*.profraw -o coverage.profdata
 
         # Render HTML
-        $(LLVMCOV) show ./$(TEST_BINARY) \
+		$(LLVMCOV) show ./$(TEST_BINARY) \
           -instr-profile=coverage.profdata \
           -format=html -output-dir=$(COVERAGE_DIR) \
           -show-branches=count \
@@ -149,16 +149,16 @@ coverage: clean-exec clean-cov
           -ignore-filename-regex="/usr/local/include/.*" \
           -ignore-filename-regex="$(TEST_DIR)/*.c"
 
-        $(MAKE) clean-temp
-        rm -f coverage-*.profraw
+		$(MAKE) clean-temp
+		rm -f coverage-*.profraw
 
 .PHONY: clean-cov
 clean-cov:
-        rm -rf *.profdata *profraw $(COVERAGE_RESULTS) $(COVERAGE_DIR)
+		rm -rf *.profdata *profraw $(COVERAGE_RESULTS) $(COVERAGE_DIR)
 
 .PHONY: clean-temp
 clean-temp:
-        rm -rf *.profdata *profraw
+		rm -rf *.profdata *profraw
 
 else  # non-FreeBSD (Linux, etc.)
 
@@ -168,16 +168,16 @@ GCOV ?= gcov
 
 .PHONY: coverage
 coverage: clean-exec clean-cov
-        @echo "Coverage not yet implemented for GNU/Linux"
-        @exit 1
+		@echo "Coverage not yet implemented for GNU/Linux"
+		@exit 1
 
 .PHONY: clean-cov
 clean-cov:
-        rm -rf *.gcov *.gcda *.gcno $(COVERAGE_RESULTS) $(COVERAGE_DIR)
+		rm -rf *.gcov *.gcda *.gcno $(COVERAGE_RESULTS) $(COVERAGE_DIR)
 
 .PHONY: clean-temp
 clean-temp:
-        rm -rf *~ \#* .\#* \
+		rm -rf *~ \#* .\#* \
         $(SRC_DIR)/*~ $(SRC_DIR)/\#* $(SRC_DIR)/.\#* \
         $(GTEST_INCLUDE_DIR)/*~ $(GTEST_INCLUDE_DIR)/\#* $(GTEST_INCLUDE_DIR)/.\#* \
         $(SRC_INCLUDE_DIR)/*~ $(SRC_INCLUDE_DIR)/\#* $(SRC_INCLUDE_DIR)/.\#* \
@@ -193,20 +193,20 @@ endif
 
 .PHONY: clean
 clean:
-        rm -rf $(BINARY) $(OBJECTS) $(libs)
+		rm -rf $(BINARY) $(OBJECTS) $(libs)
 
 .PHONY: clean-exec
 clean-exec:
-        rm -f $(TEST_BINARY) $(BINARY)
+		rm -f $(TEST_BINARY) $(BINARY)
 
 .PHONY: clean-objs
 clean-objs:
-        rm -rf $(OBJECTS) $(TEST_OBJECTS)
+		rm -rf $(OBJECTS) $(TEST_OBJECTS)
 
 .PHONY: clean-docs
 clean-docs:
-        rm -rf $(DOXY_OUTPUT)
+		rm -rf $(DOXY_OUTPUT)
 
 .PHONY: clean-tests
 clean-tests:
-        rm -rf $(TEST_BINARY) $(TEST_OBJECTS)
+		rm -rf $(TEST_BINARY) $(TEST_OBJECTS)
