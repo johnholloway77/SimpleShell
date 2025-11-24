@@ -11,9 +11,9 @@
 #include "sh_lines.h"
 #include "sh_src.h"
 
-uint32_t arg_count(char** args){
+uint32_t arg_count(char** args) {
   uint32_t count = 0;
-  while (args[count]){
+  while (args[count]) {
     count++;
   }
   return count;
@@ -122,7 +122,6 @@ char** update_args(char** args, char** envp) {
       }
     }
 
-    // free(line);
     i++;
   }
 
