@@ -27,18 +27,28 @@ void sh_redirect_init(Redirect_str* redir) {
 }
 
 void sh_restore_fd(Redirect_str* redir) {
-  if (redir->redir_in == TRUE) {
-    dup2(redir->saved_stdin, STDIN_FILENO);
+  if (redir->saved_stdin != -1) {
+    if (redir->redir_in == TRUE) {
+      dup2(redir->saved_stdin, STDIN_FILENO);
+    }
     close(redir->saved_stdin);
+    redir->saved_stdin = -1;
   }
 
-  if (redir->redir_out) {
-    dup2(redir->saved_stdout, STDOUT_FILENO);
+  if (redir->redir_out != -1) {
+    if (redir->redir_out) {
+      dup2(redir->saved_stdout, STDOUT_FILENO);
+    }
     close(redir->saved_stdout);
+    redir->saved_stdout = -1;
   }
-  if (redir->redir_err) {
-    dup2(redir->saved_stderr, STDERR_FILENO);
+
+  if (redir->saved_stderr != -1) {
+    if (redir->redir_err) {
+      dup2(redir->saved_stderr, STDERR_FILENO);
+    }
     close(redir->saved_stderr);
+    redir->saved_stderr = -1;
   }
 }
 
@@ -300,30 +310,31 @@ int sh_launch_pipe_version(Pipe_cmd pipeCmd, int async) {
         }
 
         if (redirectStr.redir_in || redirectStr.redir_out) {
-          // int ret_val = sh_launch(cmd_args, async);
 
-          pid_t pid2 = fork();
-          if (pid2 < 0) {
-            perror("fork failed");
-            exit(EXIT_FAILURE);
+
+          if (reset_handlers() == -1) {
+            (void)fprintf(stderr,
+                          "Error resetting signal handlers for child\n");
           }
 
-          if (pid2 == 0) {
-            if (reset_handlers() == -1) {
-              (void)fprintf(stderr,
-                            "Error resetting signal handlers for child\n");
-            }
-
-            if (execvp(cmd_args[0], cmd_args) < 0) {
-              fprintf(stderr, "Error:%s : %s\n", cmd_args[0], strerror(errno));
-              _exit(EXIT_FAILURE);
-            }
-
-          } else {
-            int return_val = -1;
-            waitpid(pid2, &return_val, 0);
-            exit(EXIT_SUCCESS);
+          if (execvp(cmd_args[0], cmd_args) < 0) {
+            fprintf(stderr, "Error:%s : %s\n", cmd_args[0], strerror(errno));
+            _exit(EXIT_FAILURE);
           }
+
+//
+//          pid_t pid2 = fork();
+//          if (pid2 < 0) {
+//            perror("fork failed");
+//            exit(EXIT_FAILURE);
+//          }
+//
+//          if (pid2 == 0) {
+//          } else {
+//            int return_val = -1;
+//            waitpid(pid2, &return_val, 0);
+//            exit(EXIT_SUCCESS);
+//          }
 
           // int ret_val = printf("redirect launch here\n");
 
