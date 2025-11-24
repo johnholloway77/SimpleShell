@@ -11,9 +11,7 @@
 #include <string.h>
 #endif
 
-#include "../str/strl.h"
 #include "sh_lines.h"
-#include "sh_src.h"
 
 uint32_t arg_count(char** args) {
   uint32_t count = 0;

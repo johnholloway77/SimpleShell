@@ -17,7 +17,6 @@
 #include "src/sh/sh_lines.h"
 #include "src/sh/sh_src.h"
 #include "src/sig/sig_handlers.h"
-#include "src/str/strl.h"
 
 char* cwd = NULL;
 
