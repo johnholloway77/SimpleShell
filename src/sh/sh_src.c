@@ -93,7 +93,6 @@ void sh_loop(char** envp) {
     }
 
     updated_args_count = arg_count(updated_args);
-    printf("Updated arg count: %u\n", updated_args_count);
 
     status = sh_execute(updated_args, &keep_line);
 
@@ -133,10 +132,6 @@ int sh_execute(char** args, char* keep) {
 
   while (args[argsc]) {
     argsc++;
-  }
-
-  if (app_flags & X_FLAG) {
-    printf("- %s\n", args[0]);
   }
 
   if (args[0] == NULL) {
